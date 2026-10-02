@@ -1,0 +1,223 @@
+/*
+ * Layout, media and type primitives. These are @utility rules, so they take
+ * variants (`md:shell`, `lg:type-title`) and lose to nothing but later
+ * utilities.
+ */
+
+/* ---------- Scopes ---------- */
+
+/* White-on-black block: footer, text over imagery. Buttons, links and borders
+   inside it invert on their own because they read the same tokens. */
+@utility theme-inverse {
+  --background: #000000;
+  --foreground: #ffffff;
+  --muted: #a6a6a6;
+  --surface: #141414;
+  --line: rgb(255 255 255 / 0.3);
+  --disabled: #333333;
+  --disabled-foreground: #8c8c8c;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* The inverse tokens with no fill, for text and controls laid over imagery. */
+@utility on-image {
+  --background: #000000;
+  --foreground: #ffffff;
+  --muted: #d9d9d9;
+  --line: rgb(255 255 255 / 0.5);
+  color: var(--foreground);
+}
+
+/* ---------- Containers ---------- */
+
+/* Page container: full width with the responsive gutter, capped on very wide screens. */
+@utility shell {
+  width: 100%;
+  max-width: var(--container-page);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Reading column for long copy. */
+@utility shell-reading {
+  width: 100%;
+  max-width: calc(var(--container-reading) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Break out of a shell to the viewport edge (imagery, product grids). */
+@utility bleed {
+  margin-inline: calc(var(--gutter) * -1);
+}
+
+/* ---------- Grids ---------- */
+
+/* 4 / 8 / 12 columns. Place children with col-span-*. */
+@utility grid-page {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
+  column-gap: var(--grid-gap);
+}
+
+/* Edge-to-edge product listing: 2 / 3 / 4 across, tiles separated by 1px. */
+@utility grid-products {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+
+  @variant md {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @variant lg {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Media ---------- */
+
+/* Product cut-out on the off-white tile. The image is never cropped. */
+@utility media-tile {
+  display: block;
+  position: relative;
+  aspect-ratio: var(--aspect-tile);
+  overflow: hidden;
+  background-color: var(--surface);
+
+  & > :is(img, picture, video) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+/* Editorial image or video that fills its box. Set the ratio with aspect-*. */
+@utility media-cover {
+  display: block;
+  position: relative;
+  overflow: hidden;
+
+  & > :is(img, picture, video) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* Text block under a product tile. */
+@utility tile-caption {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem 2.5rem;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  letter-spacing: var(--text-xs--letter-spacing);
+}
+
+/* Dimmed, blurred backdrop behind drawers and dialogs. */
+@utility scrim {
+  background-color: var(--color-scrim);
+  backdrop-filter: blur(8px);
+}
+
+/* ---------- Type roles ---------- */
+
+/* Large sentence-case statement, set light. */
+@utility type-display {
+  font-size: var(--text-3xl);
+  line-height: var(--text-3xl--line-height);
+  letter-spacing: var(--text-3xl--letter-spacing);
+  font-weight: 300;
+  text-wrap: balance;
+}
+
+/* Page heading. */
+@utility type-headline {
+  font-size: clamp(1.5rem, 1.1rem + 1.7vw, 2rem);
+  line-height: 1.25;
+  letter-spacing: var(--tracking-tight);
+  font-weight: 400;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+/* Section heading. */
+@utility type-title {
+  font-size: clamp(1.25rem, 1.05rem + 0.85vw, 1.5rem);
+  line-height: 1.3334;
+  letter-spacing: var(--tracking-tight);
+  font-weight: 500;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+/* Block heading inside a section. */
+@utility type-heading {
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  letter-spacing: var(--tracking-snug);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Small heading for column and group labels. */
+@utility type-label {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  letter-spacing: var(--tracking-normal);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Intro paragraph. */
+@utility type-lead {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+  letter-spacing: var(--text-lg--letter-spacing);
+  font-weight: 300;
+}
+
+/* Running copy: product descriptions, editorial text. */
+@utility type-body {
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  letter-spacing: var(--text-base--letter-spacing);
+  font-weight: 300;
+}
+
+/* Interface text: navigation, prices, filters. */
+@utility type-ui {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  letter-spacing: var(--text-xs--letter-spacing);
+  font-weight: 500;
+}
+
+/* Supporting text: product names in a grid, help text, legal. */
+@utility type-caption {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  letter-spacing: var(--text-xs--letter-spacing);
+  font-weight: 400;
+}
+
+/* Badges on tiles. */
+@utility type-micro {
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs--line-height);
+  letter-spacing: var(--text-2xs--letter-spacing);
+  font-weight: 500;
+}
+
+/* The store name. The only place the serif appears. */
+@utility type-wordmark {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: 1;
+  letter-spacing: var(--tracking-wordmark);
+  margin-right: calc(var(--tracking-wordmark) * -1);
+  font-weight: 500;
+  text-transform: uppercase;
+}

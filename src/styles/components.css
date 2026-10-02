@@ -1,0 +1,163 @@
+/*
+ * Buttons and links. They sit in the components layer so any utility on the
+ * same element (`w-full`, `mt-6`) wins without !important.
+ */
+
+@layer components {
+  /* ---------- Buttons ---------- */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: var(--control);
+    padding: 0.5rem 1.5rem;
+    border: 1px solid transparent;
+    border-radius: 0;
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+    letter-spacing: var(--tracking-cta);
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+    text-decoration: none;
+    user-select: none;
+    transition-property: background-color, color, border-color;
+    transition-duration: var(--duration-base);
+    transition-timing-function: ease;
+  }
+
+  /* Solid. One per view: the action that moves the purchase forward. */
+  .btn-primary {
+    background-color: var(--foreground);
+    border-color: var(--foreground);
+    color: var(--background);
+  }
+
+  /* Outline. Everything else. */
+  .btn-secondary {
+    background-color: transparent;
+    border-color: var(--foreground);
+    color: var(--foreground);
+  }
+
+  @media (hover: hover) {
+    .btn-primary:hover {
+      background-color: transparent;
+      color: var(--foreground);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--foreground);
+      color: var(--background);
+    }
+  }
+
+  .btn-sm {
+    min-height: 2.5rem;
+    padding-inline: 1rem;
+  }
+
+  .btn-block {
+    display: flex;
+    width: 100%;
+  }
+
+  /* Round icon button: close, carousel arrows. Needs an aria-label. */
+  .btn-icon {
+    width: var(--control);
+    min-height: var(--control);
+    padding: 0;
+    border-radius: calc(infinity * 1px);
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    background-color: var(--disabled);
+    border-color: var(--disabled);
+    color: var(--disabled-foreground);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* ---------- Fields ---------- */
+
+  /* Text input: a single rule under the value, no box. */
+  .field {
+    display: block;
+    width: 100%;
+    min-height: var(--control);
+    padding: 0.5rem 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background-color: transparent;
+    color: var(--foreground);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    transition: border-color var(--duration-base) ease;
+  }
+
+  .field::placeholder {
+    color: var(--muted);
+  }
+
+  .field:focus-visible {
+    outline: none;
+    border-bottom-color: var(--foreground);
+    box-shadow: 0 1px 0 var(--foreground);
+  }
+
+  /* ---------- Links ---------- */
+
+  /* Inline text link: always underlined. */
+  .link {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+    transition: color var(--duration-base) ease;
+  }
+
+  /* Navigation link: underline draws in on hover and stays for the current page. */
+  .link-reveal {
+    color: inherit;
+    text-decoration: none;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0 1px;
+    padding-bottom: 0.125em;
+    transition: background-size var(--duration-base) var(--ease-emphasis);
+  }
+
+  .link-reveal[aria-current]:not([aria-current="false"]) {
+    background-size: 100% 1px;
+  }
+
+  /* Secondary navigation: grey until hovered or current. */
+  .link-muted {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color var(--duration-base) ease;
+  }
+
+  .link-muted[aria-current]:not([aria-current="false"]) {
+    color: var(--foreground);
+  }
+
+  @media (hover: hover) {
+    .link:hover {
+      color: var(--muted);
+    }
+
+    .link-reveal:hover {
+      background-size: 100% 1px;
+    }
+
+    .link-muted:hover {
+      color: var(--foreground);
+    }
+  }
+}

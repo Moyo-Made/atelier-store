@@ -1,0 +1,5 @@
+allowBuilds:
+  esbuild: false
+  unrs-resolver: false
+minimumReleaseAgeExclude:
+  - '@neondatabase/serverless@1.2.0'

@@ -1,0 +1,128 @@
+/*
+ * Design tokens.
+ *
+ * Raw values live on :root as plain custom properties so they can change with
+ * the viewport or inside a scope (.theme-inverse). The @theme block below maps
+ * them onto Tailwind utilities; it is `inline` so utilities resolve the
+ * property at the element, not at :root.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Colour: monochrome. No accent hue; product imagery carries the colour. */
+  --background: #ffffff;
+  --foreground: #000000;
+  --muted: #707070;
+  --surface: #f8f8f8;
+  --line: rgb(0 0 0 / 0.15);
+  --disabled: #e6e6e6;
+  --disabled-foreground: #8c8c8c;
+  --danger: #b3261e;
+
+  /* Layout rhythm, stepped at md and lg. */
+  --gutter: 1rem;
+  --grid-gap: 1rem;
+  --grid-columns: 4;
+  --section: 3.5rem;
+  --header: 3.5rem;
+  --control: 3rem;
+
+  /* Motion. */
+  --duration-fast: 100ms;
+  --duration-base: 300ms;
+  --duration-slow: 800ms;
+
+  @variant md {
+    --gutter: 2rem;
+    --grid-gap: 1.5rem;
+    --grid-columns: 8;
+    --section: 5rem;
+  }
+
+  @variant lg {
+    --gutter: 4rem;
+    --grid-gap: 2.5rem;
+    --grid-columns: 12;
+    --section: 7.5rem;
+    --header: 4.5rem;
+  }
+}
+
+@theme inline {
+  /* Colour: only semantic names exist, so `bg-gray-200` and friends fail. */
+  --color-*: initial;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-disabled: var(--disabled);
+  --color-disabled-foreground: var(--disabled-foreground);
+  --color-danger: var(--danger);
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-scrim: rgb(0 0 0 / 0.4);
+
+  /* Type: one geometric sans for everything, a serif reserved for the wordmark. */
+  --font-sans: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
+
+  /* Scale: 10 / 12 / 16 / 20 / 24 / 32 / fluid. There is deliberately no 14. */
+  --text-*: initial;
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: 0.75rem;
+  --text-2xs--letter-spacing: 0em;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-xs--letter-spacing: -0.01em;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-base--letter-spacing: -0.02em;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-lg--letter-spacing: -0.02em;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 2rem;
+  --text-xl--letter-spacing: -0.03em;
+  --text-2xl: 2rem;
+  --text-2xl--line-height: 2.5rem;
+  --text-2xl--letter-spacing: -0.03em;
+  --text-3xl: clamp(2.25rem, 1.5rem + 3.2vw, 4rem);
+  --text-3xl--line-height: 1.15;
+  --text-3xl--letter-spacing: -0.035em;
+
+  --tracking-*: initial;
+  --tracking-tight: -0.03em;
+  --tracking-snug: -0.02em;
+  --tracking-normal: 0em;
+  --tracking-cta: 0.04em;
+  --tracking-wordmark: 0.32em;
+
+  /* Three breakpoints: phone below md, tablet, desktop, wide. */
+  --breakpoint-*: initial;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 90rem;
+
+  /* Corners are square. The single exception is a 2px chip. */
+  --radius-*: initial;
+  --radius-xs: 0.125rem;
+
+  /* Spacing: Tailwind's 4px step stays; these add the responsive rhythm. */
+  --spacing-gutter: var(--gutter);
+  --spacing-grid: var(--grid-gap);
+  --spacing-section: var(--section);
+  --spacing-header: var(--header);
+  --spacing-control: var(--control);
+
+  --container-page: 120rem;
+  --container-reading: 44rem;
+
+  --aspect-tile: 1 / 1;
+  --aspect-portrait: 3 / 4;
+
+  --ease-emphasis: cubic-bezier(0.5, 0, 0, 1);
+  --default-transition-duration: var(--duration-base);
+  --default-transition-timing-function: ease;
+}
