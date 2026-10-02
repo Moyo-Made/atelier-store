@@ -16,6 +16,7 @@ const primaryLinks = [
 ];
 
 const secondaryLinks = [
+  { label: "Search", href: "/search" },
   { label: "Stores", href: "/stores" },
   { label: "Customer care", href: "/care" },
   { label: "Account", href: "/account" },
@@ -74,11 +75,7 @@ export function SiteHeader() {
             aria-label="Account"
             className="type-ui flex items-center gap-6 justify-self-end"
           >
-            <Link
-              href="/search"
-              prefetch={false}
-              className="link-reveal max-lg:hidden"
-            >
+            <Link href="/search" className="link-reveal max-lg:hidden">
               Search
             </Link>
             <Link

@@ -10,9 +10,12 @@ import {
 export function ProductCard({
   product,
   sizes,
+  eager = false,
 }: {
   product: Product;
   sizes: string;
+  // Set on tiles that are on screen when the page opens.
+  eager?: boolean;
 }) {
   const stock = getStockState(product);
   const badge = stock.available ? product.badge : stock.label;
@@ -26,6 +29,7 @@ export function ProductCard({
           alt={image.alt}
           fill
           sizes={sizes}
+          loading={eager ? "eager" : "lazy"}
           className="mix-blend-multiply"
         />
         {badge ? (

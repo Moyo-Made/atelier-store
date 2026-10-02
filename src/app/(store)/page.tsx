@@ -52,11 +52,7 @@ export default async function Home() {
         <ul className="grid grid-cols-2 gap-px lg:grid-cols-4">
           {categories.map((category) => (
             <li key={category.id}>
-              <Link
-                href={categoryHref(category)}
-                prefetch={false}
-                className="group block"
-              >
+              <Link href={categoryHref(category)} className="group block">
                 <div className="media-tile">
                   <Image
                     src={category.imageUrl}
@@ -112,7 +108,7 @@ export default async function Home() {
           <h2 id="arrivals-title" className="type-title">
             New arrivals
           </h2>
-          <Link href="/new" prefetch={false} className="link type-ui shrink-0">
+          <Link href="/new" className="link type-ui shrink-0">
             View all
           </Link>
         </div>

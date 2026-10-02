@@ -1,8 +1,19 @@
 // Every catalogue read the storefront makes goes through this file.
-import { asc, desc, eq, isNotNull, ne, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 import { cache } from "react";
 
-import type { Product } from "@/lib/products";
+import type { Category, Product } from "@/lib/products";
 
 import { db } from "./index";
 import { categories, products } from "./schema";
@@ -30,6 +41,24 @@ export async function getHomepageCategories() {
   );
 }
 
+// Cached per request: generateMetadata and the page both ask for the category.
+export const getCategoryBySlug = cache(
+  (slug: string): Promise<Category | undefined> =>
+    db.query.categories.findFirst({ where: eq(categories.slug, slug) }),
+);
+
+export function getProductsByCategory(categoryId: number): Promise<Product[]> {
+  return db.query.products.findMany({
+    where: eq(products.categoryId, categoryId),
+    with: { category: true },
+    orderBy: newestFirst,
+  });
+}
+
+export function getCategorySlugs() {
+  return db.select({ slug: categories.slug }).from(categories);
+}
+
 // Cached per request: generateMetadata and the page both ask for the product.
 export const getProductBySlug = cache(
   (slug: string): Promise<Product | undefined> =>
@@ -52,6 +81,50 @@ export function getRelatedProducts(
       ...newestFirst,
     ],
     limit: count,
+  });
+}
+
+const MAX_SEARCH_WORDS = 5;
+
+// Every word has to appear in the name, description, materials, style number
+// or category name. Products with all the words in their name come first.
+export async function searchProducts(query: string): Promise<Product[]> {
+  const patterns = query
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, MAX_SEARCH_WORDS)
+    // % and _ are typed as text, not as LIKE wildcards.
+    .map((word) => `%${word.replace(/[\\%_]/g, "\\$&")}%`);
+  if (patterns.length === 0) return [];
+
+  return db.query.products.findMany({
+    where: and(
+      ...patterns.map((pattern) =>
+        or(
+          ilike(products.name, pattern),
+          ilike(products.description, pattern),
+          ilike(products.materials, pattern),
+          ilike(products.styleNumber, pattern),
+          inArray(
+            products.categoryId,
+            db
+              .select({ id: categories.id })
+              .from(categories)
+              .where(ilike(categories.name, pattern)),
+          ),
+        ),
+      ),
+    ),
+    with: { category: true },
+    orderBy: [
+      desc(
+        sql.join(
+          patterns.map((pattern) => sql`${products.name} ilike ${pattern}`),
+          sql` and `,
+        ),
+      ),
+      ...newestFirst,
+    ],
   });
 }
 

@@ -108,7 +108,6 @@ export default async function ProductPage({
               <span aria-hidden="true"> / </span>
               <Link
                 href={categoryHref(product.category)}
-                prefetch={false}
                 className="link-muted"
               >
                 {product.category.name}
