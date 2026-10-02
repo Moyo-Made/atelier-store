@@ -7,18 +7,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev            # dev server on http://localhost:3000
-npm run build          # production build (also the type check — there is no separate tsc script)
-npm run lint           # ESLint flat config; `npm run lint -- src/lib/auth.ts` for one file
-npm run db:generate    # write SQL migrations to drizzle/ from src/db/schema.ts
-npm run db:migrate     # apply migrations
-npm run db:push        # push schema straight to the database, no migration files
-npm run db:studio      # Drizzle Studio
-npm run db:seed        # upsert the sample categories and products (reads .env.local)
-npm run auth:generate  # write Better Auth's Drizzle tables to src/db/auth-schema.ts
+pnpm dev            # dev server on http://localhost:3000
+pnpm build          # production build (also the type check — there is no separate tsc script)
+pnpm lint           # ESLint flat config; `pnpm lint src/lib/auth.ts` for one file
+pnpm db:generate    # write SQL migrations to drizzle/ from src/db/schema.ts
+pnpm db:migrate     # apply migrations
+pnpm db:push        # push schema straight to the database, no migration files
+pnpm db:studio      # Drizzle Studio
+pnpm db:seed        # upsert the sample categories and products (reads .env.local)
+pnpm auth:generate  # write Better Auth's Drizzle tables to src/db/auth-schema.ts
 ```
 
 There is no test runner configured.
+
+Install with pnpm only; there is no `package-lock.json`. `patches/drizzle-kit@0.31.11.patch` (registered in `pnpm-workspace.yaml`) makes Drizzle Studio refuse any request whose `Origin` is not `https://local.drizzle.studio`. Unpatched, Studio accepts SQL from any web page while it is running, and no released version fixes that. npm or yarn would install it unpatched. When upgrading `drizzle-kit`, check whether upstream restricts origins; if not, redo the patch with `pnpm patch` (the same edit in `bin.cjs`, `api.js` and `api.mjs`).
 
 Setup needs a `.env.local` copied from `.env.example` with `DATABASE_URL` (Neon pooled connection string), `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`.
 
@@ -80,7 +82,7 @@ Reading and writing:
 ### Auth
 
 - `src/lib/auth.ts` is the server instance, `src/lib/auth-client.ts` the React client, and `src/app/api/auth/[...all]/route.ts` mounts every Better Auth endpoint under `/api/auth/*`.
-- The Drizzle adapter is given no explicit `schema`, so it finds its tables through the schema passed to `db`. The auth tables do not exist yet. To add them: run `npm run auth:generate`, re-export the output from `src/db/schema.ts` (`export * from "./auth-schema"`), then `db:generate` + `db:migrate`. Re-run this after adding any Better Auth plugin that adds tables or columns.
+- The Drizzle adapter is given no explicit `schema`, so it finds its tables through the schema passed to `db`. The auth tables do not exist yet. To add them: run `pnpm auth:generate`, re-export the output from `src/db/schema.ts` (`export * from "./auth-schema"`), then `db:generate` + `db:migrate`. Re-run this after adding any Better Auth plugin that adds tables or columns.
 - `betterAuth()` currently has no `emailAndPassword` or `socialProviders` config; a sign-in method has to be enabled before any auth UI will work.
 - `nextCookies()` must stay the last entry in `plugins`.
 

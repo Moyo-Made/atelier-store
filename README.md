@@ -5,11 +5,11 @@ Next.js (App Router) + TypeScript + Tailwind CSS, with Better Auth, Drizzle ORM 
 ## Setup
 
 ```bash
-npm install
+pnpm install
 cp .env.example .env.local   # then fill in the values
-npm run db:migrate     # create the tables
-npm run db:seed        # load the sample catalogue
-npm run dev
+pnpm db:migrate     # create the tables
+pnpm db:seed        # load the sample catalogue
+pnpm dev
 ```
 
 ## Environment
@@ -35,12 +35,12 @@ npm run dev
 
 | Script                  | Does                                          |
 | ----------------------- | --------------------------------------------- |
-| `npm run dev`           | Start the dev server                          |
-| `npm run build`         | Production build                              |
-| `npm run lint`          | ESLint                                        |
-| `npm run db:generate`   | Generate SQL migrations from the schema       |
-| `npm run db:migrate`    | Apply migrations                              |
-| `npm run db:push`       | Push the schema straight to the database      |
-| `npm run db:studio`     | Open Drizzle Studio                           |
-| `npm run db:seed`       | Upsert the sample categories and products     |
-| `npm run auth:generate` | Generate Better Auth's Drizzle tables         |
+| `pnpm dev`           | Start the dev server                          |
+| `pnpm build`         | Production build                              |
+| `pnpm lint`          | ESLint                                        |
+| `pnpm db:generate`   | Generate SQL migrations from the schema       |
+| `pnpm db:migrate`    | Apply migrations                              |
+| `pnpm db:push`       | Push the schema straight to the database      |
+| `pnpm db:studio`     | Open Drizzle Studio                           |
+| `pnpm db:seed`       | Upsert the sample categories and products     |
+| `pnpm auth:generate` | Generate Better Auth's Drizzle tables         |

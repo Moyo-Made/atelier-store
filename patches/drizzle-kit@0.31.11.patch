@@ -1,0 +1,66 @@
+diff --git a/api.js b/api.js
+index f4ecb91959f62fc938416a0585458c0a710af161..6e3952caedf5e7d888a166aeb970b6044eb7e357 100644
+--- a/api.js
++++ b/api.js
+@@ -73709,7 +73709,16 @@ var init_studio2 = __esm({
+         await next();
+         ctx.header("Access-Control-Allow-Private-Network", "true");
+       });
+-      app.use(cors());
++      // Patched locally: Studio runs any SQL it is sent, so only the hosted
++      // Studio UI may call this server. Everything else is refused.
++      const studioOrigin = "https://local.drizzle.studio";
++      app.use(async (ctx, next) => {
++        if (ctx.req.header("origin") !== studioOrigin) {
++          return ctx.text("Forbidden", 403);
++        }
++        await next();
++      });
++      app.use(cors({ origin: studioOrigin }));
+       app.onError((err2, ctx) => {
+         console.error(err2);
+         return ctx.json({
+diff --git a/api.mjs b/api.mjs
+index a940272dfb05accf57a472c46c52652ec9ad0080..dbfb69df2c373e4eebc31dbf5657b54215338511 100644
+--- a/api.mjs
++++ b/api.mjs
+@@ -73756,7 +73756,16 @@ var init_studio2 = __esm({
+         await next();
+         ctx.header("Access-Control-Allow-Private-Network", "true");
+       });
+-      app.use(cors());
++      // Patched locally: Studio runs any SQL it is sent, so only the hosted
++      // Studio UI may call this server. Everything else is refused.
++      const studioOrigin = "https://local.drizzle.studio";
++      app.use(async (ctx, next) => {
++        if (ctx.req.header("origin") !== studioOrigin) {
++          return ctx.text("Forbidden", 403);
++        }
++        await next();
++      });
++      app.use(cors({ origin: studioOrigin }));
+       app.onError((err2, ctx) => {
+         console.error(err2);
+         return ctx.json({
+diff --git a/bin.cjs b/bin.cjs
+index c28f3e4732f0d911237dc1eb1bc466cefaa1b976..9dd1aed4805e193a9a7c1c244a27a3b748addb00 100755
+--- a/bin.cjs
++++ b/bin.cjs
+@@ -90061,7 +90061,16 @@ var init_studio2 = __esm({
+         await next();
+         ctx.header("Access-Control-Allow-Private-Network", "true");
+       });
+-      app.use(cors());
++      // Patched locally: Studio runs any SQL it is sent, so only the hosted
++      // Studio UI may call this server. Everything else is refused.
++      const studioOrigin = "https://local.drizzle.studio";
++      app.use(async (ctx, next) => {
++        if (ctx.req.header("origin") !== studioOrigin) {
++          return ctx.text("Forbidden", 403);
++        }
++        await next();
++      });
++      app.use(cors({ origin: studioOrigin }));
+       app.onError((err2, ctx) => {
+         console.error(err2);
+         return ctx.json({
