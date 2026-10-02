@@ -1,5 +1,6 @@
 // Drizzle table definitions go here.
-// Better Auth's tables can be generated with `npm run auth:generate`.
+// Better Auth's tables are generated into ./auth-schema by `pnpm auth:generate`
+// and re-exported at the bottom of this file.
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
@@ -67,3 +68,5 @@ export const productsRelations = relations(products, ({ one }) => ({
     references: [categories.id],
   }),
 }));
+
+export * from "./auth-schema";

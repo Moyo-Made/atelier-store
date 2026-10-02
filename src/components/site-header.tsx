@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, useSyncExternalStore } from "react";
 import { useBag } from "@/components/bag";
+import { authClient } from "@/lib/auth-client";
 
 const primaryLinks = [
   { label: "New arrivals", href: "/new" },
@@ -40,6 +41,13 @@ export function SiteHeader() {
   const scrolled = useScrolled();
   const bag = useBag();
   const menu = useRef<HTMLDialogElement>(null);
+  // Better Auth cannot extend a session from a Server Component, so this
+  // request from the browser is what keeps a returning customer signed in.
+  // It also keeps the session out of the layout, which stays prerendered.
+  const { data: session, isPending } = authClient.useSession();
+  // Until the answer is in, the label stays "Account": the link is right
+  // either way, and a signed-in customer never sees "Sign in".
+  const accountLabel = isPending || session ? "Account" : "Sign in";
 
   // On the homepage the header sits over the hero image until the page scrolls.
   const overHero = pathname === "/" && !scrolled;
@@ -83,7 +91,7 @@ export function SiteHeader() {
               prefetch={false}
               className="link-reveal max-lg:hidden"
             >
-              Account
+              {accountLabel}
             </Link>
             <Link href="/bag" prefetch={false} className="link-reveal">
               Bag ({bag.count})

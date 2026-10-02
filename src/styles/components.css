@@ -109,6 +109,20 @@
     box-shadow: 0 1px 0 var(--foreground);
   }
 
+  /* A value that failed validation. Set aria-invalid, not a class. */
+  .field[aria-invalid="true"] {
+    border-bottom-color: var(--danger);
+  }
+
+  .field[aria-invalid="true"]:focus-visible {
+    box-shadow: 0 1px 0 var(--danger);
+  }
+
+  /* Locked while its form is being sent. */
+  .field:read-only {
+    color: var(--muted);
+  }
+
   /* ---------- Links ---------- */
 
   /* Inline text link: always underlined. */
