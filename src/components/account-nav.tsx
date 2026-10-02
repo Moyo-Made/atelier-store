@@ -15,6 +15,15 @@ export function AccountNav({
 }) {
   const pathname = usePathname();
 
+  // A section stays marked on the pages under it (an order under Orders).
+  // `/account` is the root of them all, so it only matches itself.
+  const current = (href: string) => {
+    if (pathname === href) return "page";
+    return href !== "/account" && pathname.startsWith(`${href}/`)
+      ? "true"
+      : undefined;
+  };
+
   return (
     <nav aria-label="Account sections" className={className}>
       <ul className="type-ui flex flex-wrap gap-x-8 gap-y-4 lg:flex-col">
@@ -23,7 +32,7 @@ export function AccountNav({
             <Link
               href={link.href}
               prefetch={false}
-              aria-current={pathname === link.href ? "page" : undefined}
+              aria-current={current(link.href)}
               className="link-muted"
             >
               {link.label}

@@ -1,19 +1,43 @@
 import Image from "next/image";
-import type { ProductImage } from "@/db/schema";
-import { formatPrice } from "@/lib/products";
+import Link from "next/link";
+import type { orderItems, ProductImage, ShippingAddress } from "@/db/schema";
+import { formatPrice, productHref, type Product } from "@/lib/products";
+
+type OrderItem = typeof orderItems.$inferSelect & {
+  // Read with the item only where the order is shown with pictures.
+  product?: Pick<Product, "slug" | "images">;
+};
 
 export type SummaryLine = {
   id: number;
   name: string;
   quantity: number;
   unitPriceCents: number;
-  // Shown before payment, when the product is at hand. A paid order keeps
-  // only the name and price it was sold at.
+  // The product's first image, when the product was read with the line.
   image?: ProductImage;
+  // The product page. The name becomes a link to it.
+  href?: string;
   note?: string;
 };
 
-// What is being bought, read-only: checkout review and order confirmation.
+// An order's items as summary lines. The name, quantity and price are the
+// ones the order was placed at; only the picture and the link come from the
+// product as it is today.
+export function orderSummaryLines(items: OrderItem[]): SummaryLine[] {
+  return items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    quantity: item.quantity,
+    unitPriceCents: item.unitPriceCents,
+    image: item.product?.images[0],
+    href: item.product ? productHref(item.product) : undefined,
+    // A line that took no stock is a made-to-order piece.
+    note: item.reservedStock ? undefined : "Made to order, ready in three weeks",
+  }));
+}
+
+// What is being bought, read-only: checkout review, order confirmation and
+// the order in the customer's account.
 export function SummaryLines({ lines }: { lines: SummaryLine[] }) {
   return (
     <ul className="divide-y border-y">
@@ -31,7 +55,18 @@ export function SummaryLines({ lines }: { lines: SummaryLine[] }) {
             </div>
           ) : null}
           <div className="min-w-0 flex-1">
-            <p className="type-body">{line.name}</p>
+            <p className="type-body">
+              {line.href ? (
+                <Link
+                  href={line.href}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {line.name}
+                </Link>
+              ) : (
+                line.name
+              )}
+            </p>
             <p className="type-caption mt-1 text-muted">
               {line.quantity} × {formatPrice(line.unitPriceCents)}
             </p>
@@ -76,5 +111,33 @@ export function SummaryTotals({
         <dd className="text-lg font-medium">{formatPrice(subtotalCents)}</dd>
       </div>
     </dl>
+  );
+}
+
+// Where a paid order is going. Stripe collects the address, so an order has
+// one only once it is paid.
+export function SummaryAddress({
+  name,
+  address,
+}: {
+  name: string | null;
+  address: ShippingAddress;
+}) {
+  return (
+    <address className="type-body not-italic">
+      {name}
+      <br />
+      {address.line1}
+      {address.line2 ? (
+        <>
+          <br />
+          {address.line2}
+        </>
+      ) : null}
+      <br />
+      {address.city}, {address.state} {address.postalCode}
+      <br />
+      {address.country}
+    </address>
   );
 }

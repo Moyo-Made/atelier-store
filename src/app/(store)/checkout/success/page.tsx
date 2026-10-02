@@ -4,9 +4,14 @@ import { notFound } from "next/navigation";
 import type Stripe from "stripe";
 import { FinishCheckout } from "@/components/finish-checkout";
 import { OrderStatusWatcher } from "@/components/order-status-watcher";
-import { SummaryLines, SummaryTotals } from "@/components/order-summary";
+import {
+  orderSummaryLines,
+  SummaryAddress,
+  SummaryLines,
+  SummaryTotals,
+} from "@/components/order-summary";
 import { getOrderBySessionId, type Order } from "@/db/orders";
-import { settleFromSession } from "@/lib/checkout";
+import { pendingState, settleFromSession } from "@/lib/checkout";
 import { getStripe } from "@/lib/stripe";
 
 export const metadata: Metadata = {
@@ -33,11 +38,7 @@ function waitingState(
   order: Order,
   session: Stripe.Checkout.Session | null,
 ): Waiting {
-  if (order.status !== "pending") return "ended";
-  // Stripe could not be asked. The webhook will still settle the order.
-  if (!session) return "confirming";
-  if (session.status === "open") return "unpaid";
-  return session.payment_status === "unpaid" ? "bank" : "confirming";
+  return order.status === "pending" ? pendingState(session) : "ended";
 }
 
 // Where Stripe sends the customer after its payment page. Arriving here
@@ -67,14 +68,7 @@ export default async function CheckoutSuccessPage({
     }
   }
 
-  const lines = order.items.map((item) => ({
-    id: item.id,
-    name: item.name,
-    quantity: item.quantity,
-    unitPriceCents: item.unitPriceCents,
-    // A line that took no stock is a made-to-order piece.
-    note: item.reservedStock ? undefined : "Made to order, ready in three weeks",
-  }));
+  const lines = orderSummaryLines(order.items);
 
   if (order.status !== "paid") {
     const waiting = waitingState(order, session);
@@ -188,21 +182,9 @@ export default async function CheckoutSuccessPage({
             <h2 id="shipping-title" className="type-ui">
               Delivering to
             </h2>
-            <address className="type-body mt-4 not-italic">
-              {order.shippingName}
-              <br />
-              {address.line1}
-              {address.line2 ? (
-                <>
-                  <br />
-                  {address.line2}
-                </>
-              ) : null}
-              <br />
-              {address.city}, {address.state} {address.postalCode}
-              <br />
-              {address.country}
-            </address>
+            <div className="mt-4">
+              <SummaryAddress name={order.shippingName} address={address} />
+            </div>
           </section>
         ) : null}
 

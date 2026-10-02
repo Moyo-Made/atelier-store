@@ -125,6 +125,47 @@ export async function releaseFromSession(
   return releaseOrder(order.id, status);
 }
 
+// What a pending order is waiting for, from the session Stripe returned.
+//   confirming  the payment may have been made; we are waiting to hear
+//   bank        Stripe has the payment, the bank has not released it yet
+//   unpaid      Stripe's page is still open and nothing has been paid
+export type PendingState = "confirming" | "bank" | "unpaid";
+
+export function pendingState(
+  session: Stripe.Checkout.Session | null,
+): PendingState {
+  // Stripe could not be asked. The webhook will still settle the order.
+  if (!session) return "confirming";
+  if (session.status === "open") return "unpaid";
+  return session.payment_status === "unpaid" ? "bank" : "confirming";
+}
+
+// Brings a pending order in line with Stripe when a customer looks at it, in
+// case the webhook has not arrived: a paid session settles the order and an
+// expired one releases it, through the same guarded transitions the webhook
+// uses. Returns the session, or null when the order is already decided or
+// Stripe cannot be reached; the caller then shows what the database says.
+export async function syncPendingOrder(
+  order: Pick<Order, "status" | "reference" | "stripeCheckoutSessionId">,
+) {
+  if (order.status !== "pending" || !order.stripeCheckoutSessionId) return null;
+
+  try {
+    const session = await getStripe().checkout.sessions.retrieve(
+      order.stripeCheckoutSessionId,
+    );
+    if (session.status === "expired") {
+      await releaseFromSession(session.id, "expired");
+    } else {
+      await settleFromSession(session);
+    }
+    return session;
+  } catch (error) {
+    console.error(`[checkout] ${order.reference}: could not ask Stripe`, error);
+    return null;
+  }
+}
+
 // Ends a checkout that has not been paid: closes the Stripe session so it
 // cannot be paid later, then gives the stock back. If Stripe says it was paid
 // after all, the order is settled instead. Returns the order as it now is.

@@ -3,7 +3,7 @@
 // second time.
 import { randomBytes } from "node:crypto";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 
 import type { BagLine } from "@/lib/bag";
 
@@ -47,6 +47,43 @@ export function getOrderBySessionId(sessionId: string) {
 }
 
 export type Order = NonNullable<Awaited<ReturnType<typeof getOrderByReference>>>;
+
+// What a customer's order history holds: their own orders that reached
+// Stripe's payment page, without the checkouts they left unpaid. Every time
+// the bag changes after checkout has started an order expires, and those
+// would bury the real ones. Both reads below go through this, so an order
+// that is not listed cannot be opened by its address either.
+function inHistoryOf(userId: number) {
+  return and(
+    eq(orders.userId, userId),
+    ne(orders.status, "expired"),
+    isNotNull(orders.stripeCheckoutSessionId),
+  );
+}
+
+// Newest first. `userId` comes from the session, never from the request.
+export function getOrdersForUser(userId: number) {
+  return db.query.orders.findMany({
+    columns: { reference: true, status: true, totalCents: true, createdAt: true },
+    where: inHistoryOf(userId),
+    orderBy: [desc(orders.createdAt), desc(orders.id)],
+  });
+}
+
+// Undefined when the order is not this customer's, exactly as when it does
+// not exist. Each item brings its product's slug and images, for the link and
+// the picture; what was bought and at what price is still the item's own copy.
+export function getOrderForUser(userId: number, reference: string) {
+  return db.query.orders.findFirst({
+    where: and(eq(orders.reference, reference), inHistoryOf(userId)),
+    with: {
+      items: {
+        orderBy: asc(orderItems.id),
+        with: { product: { columns: { slug: true, images: true } } },
+      },
+    },
+  });
+}
 
 // Writes the order, its items and the stock they take as one transaction.
 // Prices and names come from `lines`, which the caller has just read from the

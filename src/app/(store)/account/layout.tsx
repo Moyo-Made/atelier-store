@@ -12,7 +12,10 @@ export default async function AccountLayout({
 
   // A new section (orders, addresses) is one more entry here and a page
   // beside this file.
-  const links = [{ label: "Details", href: "/account" }];
+  const links = [
+    { label: "Details", href: "/account" },
+    { label: "Orders", href: "/account/orders" },
+  ];
   if (session?.user.role === "admin") {
     links.push({ label: "Admin", href: "/admin" });
   }
