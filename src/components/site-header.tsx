@@ -93,7 +93,7 @@ export function SiteHeader() {
             >
               {accountLabel}
             </Link>
-            <Link href="/bag" prefetch={false} className="link-reveal">
+            <Link href="/bag" className="link-reveal">
               Bag ({bag.count})
             </Link>
           </nav>

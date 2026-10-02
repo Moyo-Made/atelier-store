@@ -1,35 +1,61 @@
 "use client";
 
+import Link from "next/link";
+import { useState } from "react";
 import { useBag } from "@/components/bag";
+
+const FAILED = "We could not update your bag. Please try again.";
 
 export function AddToBag({
   productId,
   available,
-  stock,
+  max,
 }: {
   productId: number;
   available: boolean;
-  // Units that can be added; omit for made-to-order pieces.
-  stock?: number;
+  // From `getMaxQuantity`. It can be a minute stale here, so the server
+  // checks again and its answer is the one shown.
+  max: number;
 }) {
   const bag = useBag();
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   const inBag = bag.quantityOf(productId);
-  const atLimit = stock !== undefined && inBag >= stock;
+  const atLimit = inBag >= max;
+
+  async function add() {
+    setPending(true);
+    setMessage(null);
+    try {
+      const result = await bag.add(productId);
+      setMessage(result.message ?? null);
+    } catch {
+      setMessage(FAILED);
+    }
+    setPending(false);
+  }
 
   return (
     <div>
       <button
         type="button"
-        disabled={!available || atLimit}
-        onClick={() => bag.add(productId)}
+        disabled={!available || atLimit || pending}
+        onClick={add}
         className="btn btn-primary btn-block"
       >
-        {available ? "Add to bag" : "Sold out"}
+        {!available ? "Sold out" : pending ? "Adding…" : "Add to bag"}
       </button>
       <p role="status" className="type-caption mt-3 min-h-4 text-muted">
-        {inBag > 0
-          ? `${inBag} in your bag${atLimit ? ". That is all we have." : ""}`
-          : null}
+        {message ??
+          (inBag > 0 ? (
+            <>
+              {inBag} in your bag
+              {atLimit ? ". That is the most you can add. " : ". "}
+              <Link href="/bag" className="link text-foreground">
+                View bag
+              </Link>
+            </>
+          ) : null)}
       </p>
     </div>
   );

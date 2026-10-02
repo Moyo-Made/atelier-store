@@ -28,6 +28,15 @@ export function getStockState(
   return { label: "In stock", available: true };
 }
 
+// A made-to-order piece has no stock to run out of, so one bag line stops here.
+export const MAX_MADE_TO_ORDER = 10;
+
+// The most of one product a bag may hold. The bag's buttons and the server
+// both use this, so they cannot disagree.
+export function getMaxQuantity(item: Pick<Product, "stock" | "madeToOrder">) {
+  return item.madeToOrder ? MAX_MADE_TO_ORDER : item.stock;
+}
+
 const priceFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",

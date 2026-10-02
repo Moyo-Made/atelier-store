@@ -128,6 +128,16 @@ export async function searchProducts(query: string): Promise<Product[]> {
   });
 }
 
+// The bag's products, read fresh so its prices and stock are the current ones.
+export async function getProductsByIds(ids: number[]): Promise<Product[]> {
+  if (ids.length === 0) return [];
+
+  return db.query.products.findMany({
+    where: inArray(products.id, ids),
+    with: { category: true },
+  });
+}
+
 export function getProductSlugs() {
   return db.select({ slug: products.slug }).from(products);
 }

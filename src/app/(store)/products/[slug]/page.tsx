@@ -9,7 +9,12 @@ import {
   getProductSlugs,
   getRelatedProducts,
 } from "@/db/queries";
-import { categoryHref, formatPrice, getStockState } from "@/lib/products";
+import {
+  categoryHref,
+  formatPrice,
+  getMaxQuantity,
+  getStockState,
+} from "@/lib/products";
 
 // Tiles in grid-products are 2, 3 and 4 across.
 const tileSizes = "(min-width: 64rem) 25vw, (min-width: 48rem) 34vw, 50vw";
@@ -128,7 +133,7 @@ export default async function ProductPage({
               <AddToBag
                 productId={product.id}
                 available={stock.available}
-                stock={product.madeToOrder ? undefined : product.stock}
+                max={getMaxQuantity(product)}
               />
             </div>
 
