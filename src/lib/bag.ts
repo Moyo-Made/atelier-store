@@ -10,6 +10,7 @@ import {
   serializeBag,
   type BagEntry,
 } from "@/lib/bag-cookie";
+import { getHeldQuantities } from "@/lib/checkout";
 import { getMaxQuantity, type Product } from "@/lib/products";
 
 export type BagLine = {
@@ -54,7 +55,13 @@ export async function writeBagEntries(entries: BagEntry[]) {
 // Checks entries against the catalogue as it is now: unknown and sold-out
 // products are dropped, quantities are cut to what is available, and every
 // price is the current one.
-export async function resolveBag(entries: BagEntry[]): Promise<Bag> {
+//
+// `held` is what this browser's own open checkout has already taken out of
+// stock, by product id. It still counts as available to this customer.
+export async function resolveBag(
+  entries: BagEntry[],
+  held: Map<number, number> = new Map(),
+): Promise<Bag> {
   const found = await getProductsByIds(entries.map((entry) => entry.productId));
   const byId = new Map(found.map((product) => [product.id, product]));
 
@@ -68,7 +75,9 @@ export async function resolveBag(entries: BagEntry[]): Promise<Bag> {
       continue;
     }
 
-    const max = getMaxQuantity(product);
+    const max = product.madeToOrder
+      ? getMaxQuantity(product)
+      : getMaxQuantity(product) + (held.get(product.id) ?? 0);
     if (max === 0) {
       notices.push(`${product.name} has sold out and was removed.`);
       continue;
@@ -100,8 +109,9 @@ export async function resolveBag(entries: BagEntry[]): Promise<Bag> {
   };
 }
 
+// The bag as its page shows it.
 export async function getBag() {
-  return resolveBag(await readBagEntries());
+  return resolveBag(await readBagEntries(), await getHeldQuantities());
 }
 
 export const toEntries = (bag: Bag): BagEntry[] =>

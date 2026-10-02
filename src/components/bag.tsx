@@ -18,6 +18,8 @@ type Bag = {
   remove: (productId: number) => Promise<BagChange>;
   // Brings the cookie back in line with the catalogue.
   tidy: () => Promise<void>;
+  // Reads the cookie again after something else on the server changed it.
+  refresh: () => void;
 };
 
 const BagContext = createContext<Bag | null>(null);
@@ -70,6 +72,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
         after(setBagQuantity(productId, quantity)),
       remove: (productId) => after(removeFromBag(productId)),
       tidy: () => after(tidyBag()),
+      refresh: notify,
     };
   }, [cookie]);
 

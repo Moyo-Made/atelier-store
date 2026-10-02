@@ -11,9 +11,21 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
+// Why checkout sent the customer back here, from `?checkout=`. Only this fixed
+// sentence is ever shown, whatever the address says.
+const checkoutMessages = new Map([
+  [
+    "stock",
+    "Something in your bag was bought by someone else just now, so checkout did not start and you have not been charged. Please check the quantities below.",
+  ],
+]);
+
 // Reading the bag cookie renders this page on every request, so prices, stock
 // and the subtotal are always the current ones and it needs no `revalidate`.
-export default async function BagPage() {
+export default async function BagPage({ searchParams }: PageProps<"/bag">) {
+  const { checkout } = await searchParams;
+  const checkoutMessage =
+    typeof checkout === "string" ? checkoutMessages.get(checkout) : undefined;
   const bag = await getBag();
   const pieces = `${bag.count} ${bag.count === 1 ? "piece" : "pieces"}`;
 
@@ -29,6 +41,14 @@ export default async function BagPage() {
         </nav>
 
         <h1 className="type-headline mt-4">Bag</h1>
+        {checkoutMessage ? (
+          <p
+            role="status"
+            className="type-body mt-8 max-w-reading border-l-2 border-danger pl-4"
+          >
+            {checkoutMessage}
+          </p>
+        ) : null}
         <BagNotices notices={bag.notices} />
       </div>
 
@@ -144,9 +164,13 @@ export default async function BagPage() {
                 </div>
               </dl>
               <p className="type-caption mt-4 text-muted">
-                Delivery and taxes are not included. Checkout is not open yet.
+                No delivery charge or tax is added. You review the order
+                before paying.
               </p>
-              <Link href="/new" className="btn btn-secondary btn-block mt-8">
+              <Link href="/checkout" className="btn btn-primary btn-block mt-8">
+                Checkout
+              </Link>
+              <Link href="/new" className="btn btn-secondary btn-block mt-3">
                 Continue shopping
               </Link>
             </section>

@@ -11,6 +11,7 @@ import {
   writeBagEntries,
 } from "@/lib/bag";
 import { MAX_BAG_LINES } from "@/lib/bag-cookie";
+import { cancelOwnCheckout } from "@/lib/checkout";
 import { getMaxQuantity } from "@/lib/products";
 
 // `ok` is false when the bag does not hold what was asked for; `message`
@@ -34,6 +35,9 @@ async function changeLine(
   if (!isId(productId)) {
     return { ok: false, message: "That piece could not be found." };
   }
+
+  // Changing the bag ends any checkout made from it and returns its stock.
+  await cancelOwnCheckout();
 
   // The rest of the bag is re-checked too, so each change leaves the cookie
   // matching the catalogue.
@@ -110,6 +114,7 @@ export async function removeFromBag(productId: number) {
 // Rewrites the cookie to match the catalogue. The bag page calls this when it
 // had to drop or reduce a line, because a page cannot write cookies itself.
 export async function tidyBag() {
+  await cancelOwnCheckout();
   await writeBagEntries(toEntries(await getBag()));
   refresh();
 }
