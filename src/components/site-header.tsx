@@ -8,11 +8,14 @@ import { authClient } from "@/lib/auth-client";
 
 const primaryLinks = [
   { label: "New arrivals", href: "/new" },
-  { label: "Women", href: "/women" },
-  { label: "Men", href: "/men" },
+  { label: "Outerwear", href: "/outerwear" },
+  { label: "Knitwear", href: "/knitwear" },
   { label: "Bags", href: "/bags" },
   { label: "Shoes", href: "/shoes" },
-  { label: "Accessories", href: "/accessories" },
+  { label: "Small leather goods", href: "/small-leather" },
+  { label: "Eyewear", href: "/eyewear" },
+  { label: "Watches", href: "/watches" },
+  { label: "Fragrance", href: "/fragrance" },
   { label: "The atelier", href: "/atelier" },
 ];
 

@@ -3,10 +3,21 @@
 // second time.
 import { randomBytes } from "node:crypto";
 
-import { and, asc, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  ne,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 
 import type { BagLine } from "@/lib/bag";
 
+import { constraintOf } from "./errors";
 import { db } from "./index";
 import {
   orderItems,
@@ -128,10 +139,7 @@ export async function createPendingOrder({
         ),
     ]);
   } catch (error) {
-    // A batch reports the database's error itself; a single query wraps it.
-    const failure = error as { constraint?: string; cause?: { constraint?: string } };
-    const constraint = failure.constraint ?? failure.cause?.constraint;
-    if (constraint === "products_stock_check") return null;
+    if (constraintOf(error) === "products_stock_check") return null;
     throw error;
   }
 
@@ -178,30 +186,55 @@ export async function markOrderPaid(
   return updated.length > 0;
 }
 
-// pending -> expired or failed, giving back the stock the order was holding.
-// One statement: the stock is returned only if this call is the one that
-// flipped the status, so it can never be returned twice.
-export async function releaseOrder(
-  orderId: number,
-  status: "expired" | "failed",
-) {
+// pending -> expired or failed for the orders `which` matches, giving back the
+// stock they were holding. One statement: the stock is returned only for the
+// orders this call flipped, so it can never be returned twice. The quantities
+// are summed per product first, because an update changes a row once however
+// many of the released orders held that product. Returns how many orders
+// were released.
+async function release(which: SQL, status: "expired" | "failed") {
   const result = await db.execute<{ released: number }>(sql`
     with released as (
       update ${orders}
       set status = ${status}
-      where ${orders.id} = ${orderId} and ${orders.status} = 'pending'
+      where ${which} and ${orders.status} = 'pending'
       returning ${orders.id}
     ),
     restocked as (
       update ${products} p
-      set stock = p.stock + i.quantity
-      from ${orderItems} i, released r
-      where i.order_id = r.id and p.id = i.product_id and i.reserved_stock
+      set stock = p.stock + held.quantity
+      from (
+        select i.product_id, sum(i.quantity)::int as quantity
+        from ${orderItems} i
+        inner join released r on r.id = i.order_id
+        where i.reserved_stock
+        group by i.product_id
+      ) held
+      where p.id = held.product_id
       returning p.id
     )
     select (select count(*) from released)::int as released,
            (select count(*) from restocked)::int as restocked
   `);
 
-  return result.rows[0]?.released === 1;
+  return result.rows[0]?.released ?? 0;
+}
+
+// Returns whether this call was the one that released the order.
+export async function releaseOrder(
+  orderId: number,
+  status: "expired" | "failed",
+) {
+  return (await release(sql`${orders.id} = ${orderId}`, status)) === 1;
+}
+
+// Releases the pending orders whose hold has run out without a Checkout
+// Session ever being attached: the request that wrote them ended before it
+// reached Stripe. Nobody was given a payment page for them, so they cannot be
+// paid and no webhook will ever release them. Called when a checkout starts.
+export function releaseAbandonedOrders() {
+  return release(
+    sql`${orders.stripeCheckoutSessionId} is null and ${orders.expiresAt} < now()`,
+    "expired",
+  );
 }

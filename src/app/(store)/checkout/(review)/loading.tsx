@@ -1,5 +1,6 @@
-// Shown while a checkout page is prepared: the review while the bag is
-// checked, the confirmation while Stripe is asked about the payment.
+// Shown while the checkout review is prepared and the bag is checked. It is
+// in the `(review)` group so that it does not also cover the confirmation
+// page, which has to be able to answer with a 404 status.
 export default function CheckoutLoading() {
   return (
     <main className="flex-1 pt-header">

@@ -7,6 +7,7 @@ import {
   attachCheckoutSession,
   createPendingOrder,
   getOrderBySessionId,
+  releaseAbandonedOrders,
   releaseOrder,
 } from "@/db/orders";
 import { readBagEntries, resolveBag, writeBagEntries } from "@/lib/bag";
@@ -15,6 +16,7 @@ import {
   forgetCheckout,
   getOwnCheckout,
   rememberCheckout,
+  syncPendingOrder,
 } from "@/lib/checkout";
 import { getSession } from "@/lib/session";
 import { getStripe, siteUrl } from "@/lib/stripe";
@@ -28,7 +30,22 @@ const INTEGRATION_IDENTIFIER = "atelier-bag-checkout-qhzkwmtr";
 export async function startCheckout() {
   // An earlier checkout from this browser gives its stock back first, so a
   // customer is never refused by their own hold.
-  await cancelOwnCheckout();
+  const ended = await cancelOwnCheckout();
+  // It was completed at Stripe after all, so this bag is already bought:
+  // show that order instead of selling the same pieces twice.
+  if (ended.state === "bought" && ended.order.stripeCheckoutSessionId) {
+    await writeBagEntries([]);
+    redirect(
+      `/checkout/success?session_id=${encodeURIComponent(ended.order.stripeCheckoutSessionId)}`,
+    );
+  }
+  // Stripe cannot be reached, so a new payment page could not be opened
+  // either. The earlier checkout keeps its hold until it can be closed.
+  if (ended.state === "open") redirect("/checkout?status=error");
+
+  // Holds left by a checkout that died before it reached Stripe would
+  // otherwise never be given back.
+  await releaseAbandonedOrders();
 
   const bag = await resolveBag(await readBagEntries());
   // Empty, or something was dropped or reduced: the bag page explains it.
@@ -42,9 +59,9 @@ export async function startCheckout() {
   // Someone else took the stock between the check above and the write.
   if (!order) redirect("/bag?checkout=stock");
 
-  let url: string | null = null;
+  let checkout: { id: string; url: string | null } | null = null;
   try {
-    const checkout = await getStripe().checkout.sessions.create(
+    const created = await getStripe().checkout.sessions.create(
       {
         mode: "payment",
         line_items: bag.lines.map((line) => ({
@@ -73,25 +90,26 @@ export async function startCheckout() {
       { idempotencyKey: `checkout-${order.reference}` },
     );
 
-    await attachCheckoutSession(order.id, checkout.id);
-    url = checkout.url;
+    await attachCheckoutSession(order.id, created.id);
+    checkout = created;
   } catch (error) {
     console.error(`[checkout] ${order.reference}: could not start`, error);
   }
 
-  if (!url) {
+  if (!checkout?.url) {
     await releaseOrder(order.id, "failed");
     redirect("/checkout?status=error");
   }
 
-  await rememberCheckout(order.reference);
-  redirect(url);
+  await rememberCheckout(checkout.id);
+  redirect(checkout.url);
 }
 
-// Empties the bag once its order is paid. The confirmation page calls this,
+// Empties the bag once its order is bought. The confirmation page calls this,
 // since a page cannot write cookies. It only acts for the checkout this
-// browser started, and only when the database says that order is paid, so an
-// old confirmation link cannot empty a new bag.
+// browser started, so an old confirmation link cannot empty a new bag, and
+// only when the order is bought: the database says it is paid, or Stripe says
+// its checkout is complete and the bank has still to release the money.
 export async function finishCheckout(sessionId: string) {
   if (typeof sessionId !== "string") return;
 
@@ -99,7 +117,12 @@ export async function finishCheckout(sessionId: string) {
     getOrderBySessionId(sessionId),
     getOwnCheckout(),
   ]);
-  if (!order || order.status !== "paid" || own?.id !== order.id) return;
+  if (!order || own?.id !== order.id) return;
+
+  const bought =
+    order.status === "paid" ||
+    (await syncPendingOrder(order))?.status === "complete";
+  if (!bought) return;
 
   await writeBagEntries([]);
   await forgetCheckout();

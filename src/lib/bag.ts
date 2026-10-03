@@ -10,7 +10,7 @@ import {
   serializeBag,
   type BagEntry,
 } from "@/lib/bag-cookie";
-import { getHeldQuantities } from "@/lib/checkout";
+import { getHeldQuantities, getOwnCheckout } from "@/lib/checkout";
 import { getMaxQuantity, type Product } from "@/lib/products";
 
 export type BagLine = {
@@ -52,6 +52,14 @@ export async function writeBagEntries(entries: BagEntry[]) {
   });
 }
 
+// The most of a product this customer's bag may hold: `getMaxQuantity`, plus
+// the units their own open checkout has already taken out of stock.
+export function getBagMax(product: Product, held: Map<number, number>) {
+  return product.madeToOrder
+    ? getMaxQuantity(product)
+    : getMaxQuantity(product) + (held.get(product.id) ?? 0);
+}
+
 // Checks entries against the catalogue as it is now: unknown and sold-out
 // products are dropped, quantities are cut to what is available, and every
 // price is the current one.
@@ -75,9 +83,7 @@ export async function resolveBag(
       continue;
     }
 
-    const max = product.madeToOrder
-      ? getMaxQuantity(product)
-      : getMaxQuantity(product) + (held.get(product.id) ?? 0);
+    const max = getBagMax(product, held);
     if (max === 0) {
       notices.push(`${product.name} has sold out and was removed.`);
       continue;
@@ -110,8 +116,25 @@ export async function resolveBag(
 }
 
 // The bag as its page shows it.
-export async function getBag() {
-  return resolveBag(await readBagEntries(), await getHeldQuantities());
+export async function getBag(): Promise<Bag> {
+  const checkout = await getOwnCheckout();
+
+  // Paid without the customer coming back to the confirmation page, which is
+  // what empties the bag. Nothing has touched the bag since (any change
+  // forgets the checkout), so what it holds is what that order bought. A page
+  // cannot write cookies: the notice has `tidyBag` empty it.
+  if (checkout?.status === "paid") {
+    return {
+      lines: [],
+      count: 0,
+      subtotalCents: 0,
+      notices: [
+        `Order ${checkout.reference} is paid, so its pieces were taken out of your bag.`,
+      ],
+    };
+  }
+
+  return resolveBag(await readBagEntries(), getHeldQuantities(checkout));
 }
 
 export const toEntries = (bag: Bag): BagEntry[] =>

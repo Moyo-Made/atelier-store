@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 
-import { cancelCheckout, forgetCheckout, getOwnCheckout } from "@/lib/checkout";
+import {
+  cancelCheckout,
+  CheckoutNotClosed,
+  forgetCheckout,
+  getOwnCheckout,
+} from "@/lib/checkout";
 
 // Where Stripe's "back" link lands. The checkout this browser started is
 // closed at Stripe and its stock is given back; the bag is left as it was,
@@ -9,7 +14,16 @@ export async function GET() {
   const order = await getOwnCheckout();
   if (!order) redirect("/bag");
 
-  const closed = await cancelCheckout(order);
+  let closed;
+  try {
+    closed = await cancelCheckout(order);
+  } catch (error) {
+    if (!(error instanceof CheckoutNotClosed)) throw error;
+    // Stripe cannot be reached. The checkout stays as it is, still
+    // remembered, and the next change to the bag tries to close it again.
+    console.error(`[checkout] ${error.message}`, error.cause);
+    redirect("/checkout");
+  }
 
   // It turned out to be paid (or is being confirmed): show that instead.
   if (

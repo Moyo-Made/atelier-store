@@ -16,7 +16,6 @@ const columns = [
     links: [
       { label: "The atelier", href: "/atelier" },
       { label: "Stores", href: "/stores" },
-      { label: "Appointments", href: "/appointments" },
       { label: "Careers", href: "/careers" },
     ],
   },
@@ -56,11 +55,7 @@ export function SiteFooter() {
 
           <div className="col-span-2 md:col-span-2 lg:col-span-3">
             <h2 className="type-label text-muted">Shipping to</h2>
-            <p className="type-ui mt-5">
-              <Link href="/region" prefetch={false} className="link">
-                United States (USD)
-              </Link>
-            </p>
+            <p className="type-ui mt-5">United States (USD)</p>
           </div>
         </div>
 

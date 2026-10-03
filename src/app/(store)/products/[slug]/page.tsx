@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddToBag } from "@/components/add-to-bag";
 import { ProductCard } from "@/components/product-card";
+import { StockLabel } from "@/components/stock-label";
 import {
   getProductBySlug,
   getProductSlugs,
@@ -15,6 +16,7 @@ import {
   getMaxQuantity,
   getStockState,
 } from "@/lib/products";
+import { openGraphDefaults, shareImage, siteImage } from "@/lib/share";
 
 // Tiles in grid-products are 2, 3 and 4 across.
 const tileSizes = "(min-width: 64rem) 25vw, (min-width: 48rem) 34vw, 50vw";
@@ -33,9 +35,17 @@ export async function generateMetadata({
   const product = await getProductBySlug(slug);
   if (!product) return {};
 
+  const [image] = product.images;
+
   return {
     title: `${product.name} | Atelier Store`,
     description: product.description,
+    openGraph: {
+      ...openGraphDefaults,
+      title: product.name,
+      description: `${formatPrice(product.priceCents)}. ${product.description}`,
+      images: [image ? shareImage(image.src, image.alt) : siteImage],
+    },
   };
 }
 
@@ -121,11 +131,7 @@ export default async function ProductPage({
 
             <h1 className="type-title mt-4">{product.name}</h1>
             <p className="mt-3 text-lg">{formatPrice(product.priceCents)}</p>
-            <p
-              className={`type-ui mt-2 ${stock.available ? "" : "text-muted"}`}
-            >
-              {stock.label}
-            </p>
+            <StockLabel stock={stock} className="type-ui mt-2" />
 
             <p className="type-body mt-8">{product.description}</p>
 
@@ -135,6 +141,17 @@ export default async function ProductPage({
                 available={stock.available}
                 max={getMaxQuantity(product)}
               />
+              {stock.level === "out" ? (
+                <p className="type-caption text-muted">
+                  This piece has sold out.{" "}
+                  <Link
+                    href={categoryHref(product.category)}
+                    className="link text-foreground"
+                  >
+                    See all {product.category.name.toLowerCase()}
+                  </Link>
+                </p>
+              ) : null}
             </div>
 
             <div className="mt-6 border-t">

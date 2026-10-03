@@ -34,11 +34,7 @@ export default async function Home() {
           <div className="shell">
             <h1 className="type-display max-w-[12ch]">{hero.title}</h1>
             <p className="type-lead mt-4 max-w-[30ch]">{hero.description}</p>
-            <Link
-              href={hero.href}
-              prefetch={false}
-              className="btn btn-primary mt-8"
-            >
+            <Link href={hero.href} className="btn btn-primary mt-8">
               {hero.cta}
             </Link>
           </div>
@@ -90,11 +86,7 @@ export default async function Home() {
               <div className="on-image absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent px-gutter pt-32 pb-10 text-center lg:pb-14">
                 <h3 className="type-title">{collection.name}</h3>
                 <p className="type-caption mt-1">{collection.season}</p>
-                <Link
-                  href={collection.href}
-                  prefetch={false}
-                  className="btn btn-secondary mt-6"
-                >
+                <Link href={collection.href} className="btn btn-secondary mt-6">
                   {collection.cta}
                 </Link>
               </div>
@@ -140,11 +132,7 @@ export default async function Home() {
               {atelier.title}
             </h2>
             <p className="type-body mt-6 max-w-reading">{atelier.body}</p>
-            <Link
-              href={atelier.href}
-              prefetch={false}
-              className="btn btn-secondary mt-8"
-            >
+            <Link href={atelier.href} className="btn btn-secondary mt-8">
               {atelier.cta}
             </Link>
           </div>
@@ -156,7 +144,7 @@ export default async function Home() {
           <h2 id="services-title" className="type-title">
             Services
           </h2>
-          <ul className="mt-10 grid gap-x-grid gap-y-10 md:grid-cols-3">
+          <ul className="mt-10 grid gap-x-grid gap-y-10 md:grid-cols-2">
             {services.map((service) => (
               <li key={service.href} className="border-t border-foreground pt-6">
                 <h3 className="type-heading">{service.title}</h3>

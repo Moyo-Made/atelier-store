@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useState } from "react";
+import { Field } from "@/components/field";
 import { authClient } from "@/lib/auth-client";
 
 type Mode = "sign-in" | "sign-up";
@@ -103,53 +104,6 @@ function describe(
         ? "We could not create your account. Please try again."
         : "We could not sign you in. Please try again.",
   };
-}
-
-function Field({
-  label,
-  hint,
-  error,
-  action,
-  ...input
-}: {
-  label: string;
-  hint?: string;
-  error?: string;
-  // A control shown opposite the label, such as the password toggle.
-  action?: React.ReactNode;
-} & React.ComponentProps<"input">) {
-  const id = useId();
-  const described = [hint && `${id}-hint`, error && `${id}-error`]
-    .filter(Boolean)
-    .join(" ");
-
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-4">
-        <label htmlFor={id} className="type-caption text-muted">
-          {label}
-        </label>
-        {action}
-      </div>
-      <input
-        {...input}
-        id={id}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={described || undefined}
-        className="field"
-      />
-      {hint && !error ? (
-        <p id={`${id}-hint`} className="type-caption mt-2 text-muted">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={`${id}-error`} className="type-caption mt-2 text-danger">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
 }
 
 // Goes through /api/auth rather than a Server Action so Better Auth's rate

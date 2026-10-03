@@ -22,7 +22,7 @@ export const hero = {
   description:
     "Evening pieces, soft tailoring and leather that is made to wear in.",
   cta: "Shop the collection",
-  href: "/collections/autumn",
+  href: "/new",
   // naeim jafari
   image: unsplash("1593528625646-d705402054ba", { width: 2400 }),
   alt: "A model seated across two wooden chairs in a hall crossed by shafts of light",
@@ -30,22 +30,22 @@ export const hero = {
 
 export const collections: Collection[] = [
   {
-    name: "Women",
+    name: "Outerwear",
     season: "Autumn collection",
-    cta: "Shop women",
+    cta: "Shop outerwear",
     // The AW Creative Directory
     image: unsplash("1618244965061-1d27b208d6e8", { width: 1600 }),
     alt: "A woman in a camel coat standing against a dark panelled door",
-    href: "/women",
+    href: "/outerwear",
   },
   {
-    name: "Men",
+    name: "Watches",
     season: "Autumn collection",
-    cta: "Shop men",
+    cta: "Shop watches",
     // Christian
     image: unsplash("1676278746061-c5bac5b34ae5", { width: 1600 }),
-    alt: "A man in a pinstripe suit reading in an armchair in low light",
-    href: "/men",
+    alt: "A man in a pinstripe suit and a wristwatch reading in an armchair in low light",
+    href: "/watches",
   },
 ];
 
@@ -71,11 +71,5 @@ export const services = [
     body: "Bring any piece back to be re-hemmed, relined or resoled in the workshop.",
     cta: "Book an alteration",
     href: "/care/alterations",
-  },
-  {
-    title: "Private appointments",
-    body: "An hour with an advisor, in a store or by video, with pieces set aside for you.",
-    cta: "Book an appointment",
-    href: "/appointments",
   },
 ];

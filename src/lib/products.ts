@@ -11,7 +11,18 @@ export const productHref = (product: Pick<Product, "slug">) =>
 export const categoryHref = (category: Pick<Category, "slug">) =>
   `/${category.slug}`;
 
-export type StockState = { label: string; available: boolean };
+// `level` is the state the storefront styles; `label` is its wording.
+//   in             there is plenty
+//   low            few enough left to say how many
+//   out            none, and it cannot be bought
+//   made-to-order  made after it is ordered, whatever the stock
+export type StockLevel = "in" | "low" | "out" | "made-to-order";
+
+export type StockState = {
+  level: StockLevel;
+  label: string;
+  available: boolean;
+};
 
 const LOW_STOCK = 3;
 
@@ -19,13 +30,19 @@ export function getStockState(
   item: Pick<Product, "stock" | "madeToOrder">,
 ): StockState {
   if (item.madeToOrder) {
-    return { label: "Made to order, ready in three weeks", available: true };
+    return {
+      level: "made-to-order",
+      label: "Made to order, ready in three weeks",
+      available: true,
+    };
   }
-  if (item.stock === 0) return { label: "Sold out", available: false };
+  if (item.stock === 0) {
+    return { level: "out", label: "Sold out", available: false };
+  }
   if (item.stock <= LOW_STOCK) {
-    return { label: `Only ${item.stock} left`, available: true };
+    return { level: "low", label: `Only ${item.stock} left`, available: true };
   }
-  return { label: "In stock", available: true };
+  return { level: "in", label: "In stock", available: true };
 }
 
 // A made-to-order piece has no stock to run out of, so one bag line stops here.

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import type Stripe from "stripe";
 import { FinishCheckout } from "@/components/finish-checkout";
 import { OrderStatusWatcher } from "@/components/order-status-watcher";
@@ -11,15 +12,16 @@ import {
   SummaryTotals,
 } from "@/components/order-summary";
 import { getOrderBySessionId, type Order } from "@/db/orders";
-import { pendingState, settleFromSession } from "@/lib/checkout";
-import { getStripe } from "@/lib/stripe";
+import {
+  CHECKOUT_SESSION_ID,
+  pendingState,
+  syncPendingOrder,
+} from "@/lib/checkout";
 
 export const metadata: Metadata = {
   title: "Your order | Atelier Store",
   robots: { index: false },
 };
-
-const SESSION_ID = /^cs_(test|live)_[A-Za-z0-9]{10,200}$/;
 
 const dateFormat = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
@@ -46,27 +48,58 @@ function waitingState(
 // only Stripe can move to paid: through the webhook, or through the check
 // made below with our key. The session id in the address is what allows this
 // order to be seen.
+//
+// The order is looked up before anything is streamed, so an id that is
+// malformed or not ours is a 404 with a 404 status. For the same reason no
+// `loading.tsx` covers this page; the wait for Stripe has its own fallback.
 export default async function CheckoutSuccessPage({
   searchParams,
 }: PageProps<"/checkout/success">) {
   const { session_id: sessionId } = await searchParams;
-  if (typeof sessionId !== "string" || !SESSION_ID.test(sessionId)) notFound();
+  if (typeof sessionId !== "string" || !CHECKOUT_SESSION_ID.test(sessionId)) {
+    notFound();
+  }
 
-  let order = await getOrderBySessionId(sessionId);
+  const order = await getOrderBySessionId(sessionId);
   if (!order) notFound();
 
-  // Only an undecided order is worth asking Stripe about. If Stripe cannot
-  // be reached the page still works: it shows the pending state and the
-  // webhook settles the order.
-  let session: Stripe.Checkout.Session | null = null;
-  if (order.status === "pending") {
-    try {
-      session = await getStripe().checkout.sessions.retrieve(sessionId);
-      order = (await settleFromSession(session)) ?? order;
-    } catch (error) {
-      console.error(`[checkout] ${order.reference}: could not ask Stripe`, error);
-    }
-  }
+  return (
+    <Suspense fallback={<Confirming />}>
+      <Confirmation found={order} sessionId={sessionId} />
+    </Suspense>
+  );
+}
+
+// Shown on the way back from Stripe, while the payment is checked with Stripe.
+function Confirming() {
+  return (
+    <main className="flex-1 pt-header">
+      <div className="shell-reading py-section">
+        <h1 className="type-headline">Confirming your payment</h1>
+        <p role="status" className="type-lead mt-4 text-muted">
+          We are checking the payment with Stripe. Please keep this page open;
+          there is no need to pay again.
+        </p>
+      </div>
+    </main>
+  );
+}
+
+async function Confirmation({
+  found,
+  sessionId,
+}: {
+  found: Order;
+  sessionId: string;
+}) {
+  let order = found;
+
+  // Only an undecided order is worth asking Stripe about: a paid session
+  // settles it and an expired one releases it. If Stripe cannot be reached
+  // the page still works: it shows the pending state and the webhook settles
+  // the order.
+  const session = await syncPendingOrder(order);
+  if (session) order = (await getOrderBySessionId(sessionId)) ?? order;
 
   const lines = orderSummaryLines(order.items);
 
@@ -106,6 +139,8 @@ export default async function CheckoutSuccessPage({
           <p className="type-lead mt-4 text-muted">{copy.text}</p>
 
           {waiting === "confirming" ? <OrderStatusWatcher /> : null}
+          {/* Bought, with only the bank to wait for: the bag is emptied now. */}
+          {waiting === "bank" ? <FinishCheckout sessionId={sessionId} /> : null}
           {copy.action ? (
             <Link href={copy.action.href} className="btn btn-primary mt-10">
               {copy.action.label}

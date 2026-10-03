@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { StockLabel } from "@/components/stock-label";
+import { getStockState } from "@/lib/products";
 
 export const metadata: Metadata = {
   title: "Styleguide | Atelier Store",
@@ -40,6 +42,8 @@ const products = [
   { name: "Leather tote, large", price: "$1,850" },
   { name: "Silk twill shirt", price: "$690" },
   { name: "Pleated trouser", price: "$780", badge: "New" },
+  { name: "Silk scarf", price: "$320", stock: 2 },
+  { name: "Card holder", price: "$240", stock: 0 },
 ];
 
 function Section({
@@ -194,21 +198,35 @@ export default function Styleguide() {
           <h2 className="type-title mb-10">Product grid</h2>
         </div>
         <ul className="grid-products">
-          {products.map((product) => (
-            <li key={product.name}>
-              <div className="media-tile">
-                {product.badge ? (
-                  <span className="type-micro absolute left-3 top-3">
-                    {product.badge}
-                  </span>
-                ) : null}
-              </div>
-              <div className="tile-caption">
-                <p>{product.name}</p>
-                <p className="font-medium">{product.price}</p>
-              </div>
-            </li>
-          ))}
+          {products.map((product) => {
+            // Tiles with a stock figure show the low-stock and sold-out states
+            // as `ProductCard` draws them.
+            const stock =
+              product.stock === undefined
+                ? null
+                : getStockState({ stock: product.stock, madeToOrder: false });
+            const soldOut = stock?.level === "out";
+            const badge = soldOut ? stock.label : product.badge;
+
+            return (
+              <li key={product.name}>
+                <div className="media-tile">
+                  {badge ? (
+                    <span className="type-micro absolute left-3 top-3">
+                      {badge}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="tile-caption">
+                  <p>{product.name}</p>
+                  <p className={soldOut ? "text-muted" : "font-medium"}>
+                    {product.price}
+                  </p>
+                  {stock?.level === "low" ? <StockLabel stock={stock} /> : null}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
 

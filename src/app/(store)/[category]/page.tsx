@@ -6,6 +6,7 @@ import {
   getCategorySlugs,
   getProductsByCategory,
 } from "@/db/queries";
+import { openGraphDefaults, shareImage, siteImage } from "@/lib/share";
 
 // Stock and new products show up within a minute without a rebuild.
 export const revalidate = 60;
@@ -22,9 +23,23 @@ export async function generateMetadata({
   const category = await getCategoryBySlug(slug);
   if (!category) return {};
 
+  const description = `${category.name} from Atelier Store, with the most recent pieces first.`;
+
   return {
     title: `${category.name} | Atelier Store`,
-    description: `${category.name} from Atelier Store, with the most recent pieces first.`,
+    description,
+    openGraph: {
+      ...openGraphDefaults,
+      title: category.name,
+      description,
+      // Only homepage-tile categories have a photograph; the others use the
+      // site's own image.
+      images: [
+        category.imageUrl && category.imageAlt
+          ? shareImage(category.imageUrl, category.imageAlt)
+          : siteImage,
+      ],
+    },
   };
 }
 

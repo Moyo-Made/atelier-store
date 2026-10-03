@@ -41,9 +41,16 @@ export async function POST(request: Request) {
       // delayed payment method it arrives unpaid and the second event follows
       // when the money does. `settleFromSession` only marks an order paid
       // when the session says it is.
+      //
+      // The session is read again with our key instead of taken from the
+      // event: the event's copy has the shape of the endpoint's API version,
+      // which can be older than the SDK's and keep the delivery address
+      // somewhere `settleFromSession` does not look.
       case "checkout.session.completed":
       case "checkout.session.async_payment_succeeded":
-        await settleFromSession(event.data.object);
+        await settleFromSession(
+          await stripe.checkout.sessions.retrieve(event.data.object.id),
+        );
         break;
 
       // Nobody paid before the session ran out, including a customer who

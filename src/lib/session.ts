@@ -19,19 +19,32 @@ export async function requireUser(next: string) {
   return session;
 }
 
-// For anything only an admin may see or do. Everyone else gets a 404, so the
-// response does not confirm the admin area exists.
-export async function requireAdmin(next: string) {
-  const session = await requireUser(next);
-  if (session.user.role !== "admin") notFound();
+// For anything only an admin may see or do. Everyone else gets a 404, signed
+// in or not, so the response does not confirm the admin area exists. An admin
+// who is signed out signs in at /sign-in and comes back.
+export async function requireAdmin() {
+  const session = await getSession();
+  if (session?.user.role !== "admin") notFound();
   return session;
 }
 
-// `?next=` comes from the URL, so only a path on this site is followed.
+// Stands in for this site's address when a path is parsed; never requested.
+const SITE = "http://site.invalid";
+
+// `?next=` comes from the URL, so only a path on this site is followed. It is
+// parsed the way a browser will parse it, which drops tabs and newlines and
+// reads `\` as `/`: `/<tab>/evil.com` is `//evil.com`, another site. What is
+// returned is the parsed path, so what is followed is what was checked.
 export function safeNext(next: string | string[] | undefined) {
   const value = Array.isArray(next) ? next[0] : next;
-  if (!value || !value.startsWith("/") || /^\/[/\\]/.test(value)) {
+  if (!value || !value.startsWith("/")) return "/account";
+
+  let url: URL;
+  try {
+    url = new URL(value, SITE);
+  } catch {
     return "/account";
   }
-  return value;
+  if (url.origin !== SITE) return "/account";
+  return `${url.pathname}${url.search}${url.hash}`;
 }

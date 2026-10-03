@@ -118,8 +118,9 @@
     box-shadow: 0 1px 0 var(--danger);
   }
 
-  /* Locked while its form is being sent. */
-  .field:read-only {
+  /* Locked while its form is being sent. A select always matches
+     :read-only, so it is left out. */
+  .field:read-only:not(select) {
     color: var(--muted);
   }
 

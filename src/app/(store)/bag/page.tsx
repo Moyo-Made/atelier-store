@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { BagLineControls } from "@/components/bag-line-controls";
 import { BagNotices } from "@/components/bag-notices";
+import { StockLabel } from "@/components/stock-label";
 import { getBag } from "@/lib/bag";
 import { formatPrice, getStockState, productHref } from "@/lib/products";
 
@@ -118,9 +119,10 @@ export default async function BagPage({ searchParams }: PageProps<"/bag">) {
                         <p className="type-caption mt-1 text-muted">
                           {formatPrice(product.priceCents)} each
                         </p>
-                        <p className="type-caption mt-1">
-                          {getStockState(product).label}
-                        </p>
+                        <StockLabel
+                          stock={getStockState(product)}
+                          className="type-caption mt-1"
+                        />
 
                         <div className="mt-4">
                           <BagLineControls

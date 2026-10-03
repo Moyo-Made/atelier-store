@@ -16,10 +16,18 @@ import { getStripe } from "@/lib/stripe";
 
 // Names the order this browser last took to Stripe, so that coming back can
 // cancel it. HttpOnly: unlike the bag cookie, the page has no use for it.
+//
+// It holds the Checkout Session id, not the order's reference. Whoever sends
+// this value can cancel the checkout, and a reference is no secret: it is the
+// order number the customer reads out and forwards. The session id is long,
+// random, and already what allows the confirmation page to be seen.
 const CHECKOUT_COOKIE = "atelier_checkout";
 
-export async function rememberCheckout(reference: string) {
-  (await cookies()).set(CHECKOUT_COOKIE, reference, {
+// The shape of a Checkout Session id, `cs_test_…` or `cs_live_…`.
+export const CHECKOUT_SESSION_ID = /^cs_(test|live)_[A-Za-z0-9]{10,200}$/;
+
+export async function rememberCheckout(sessionId: string) {
+  (await cookies()).set(CHECKOUT_COOKIE, sessionId, {
     path: "/",
     httpOnly: true,
     sameSite: "lax",
@@ -33,17 +41,16 @@ export async function forgetCheckout() {
 }
 
 export async function getOwnCheckout() {
-  const reference = (await cookies()).get(CHECKOUT_COOKIE)?.value;
-  if (!reference || !/^AT-[2-9A-Z]{10}$/.test(reference)) return undefined;
-  return getOrderByReference(reference);
+  const sessionId = (await cookies()).get(CHECKOUT_COOKIE)?.value;
+  if (!sessionId || !CHECKOUT_SESSION_ID.test(sessionId)) return undefined;
+  return getOrderBySessionId(sessionId);
 }
 
-// Units this browser's open checkout is holding. The bag adds them back to
-// what is available, so a customer's own hold does not make their bag look
-// sold out.
-export async function getHeldQuantities() {
+// Units this browser's open checkout (from `getOwnCheckout`) is holding. The
+// bag adds them back to what is available, so a customer's own hold does not
+// make their bag look sold out.
+export function getHeldQuantities(order: Order | undefined) {
   const held = new Map<number, number>();
-  const order = await getOwnCheckout();
   if (order?.status !== "pending") return held;
 
   for (const item of order.items) {
@@ -90,6 +97,11 @@ export async function settleFromSession(session: Stripe.Checkout.Session) {
   }
 
   const shipping = shippingFrom(session);
+  if (!shipping.address) {
+    console.error(
+      `[checkout] ${order.reference}: paid, but the session has no delivery address. Check it in Stripe.`,
+    );
+  }
   const details = {
     paymentIntentId:
       typeof session.payment_intent === "string"
@@ -166,9 +178,15 @@ export async function syncPendingOrder(
   }
 }
 
+// Stripe could not be reached, or would not close the session. The session
+// may still be open, so it can still be paid: the order keeps its stock.
+export class CheckoutNotClosed extends Error {}
+
 // Ends a checkout that has not been paid: closes the Stripe session so it
 // cannot be paid later, then gives the stock back. If Stripe says it was paid
 // after all, the order is settled instead. Returns the order as it now is.
+// Throws `CheckoutNotClosed`, with nothing changed, when the session could
+// not be closed.
 export async function cancelCheckout(order: Order) {
   if (order.status !== "pending") return order;
 
@@ -178,14 +196,21 @@ export async function cancelCheckout(order: Order) {
       await stripe.checkout.sessions.expire(order.stripeCheckoutSessionId);
     } catch {
       // Only an open session can be expired. Find out which way it closed.
-      const session = await stripe.checkout.sessions.retrieve(
-        order.stripeCheckoutSessionId,
-      );
+      const session = await stripe.checkout.sessions
+        .retrieve(order.stripeCheckoutSessionId)
+        .catch((cause: unknown) => {
+          throw new CheckoutNotClosed(
+            `Could not ask Stripe about the checkout for ${order.reference}`,
+            { cause },
+          );
+        });
       if (session.status === "complete") {
         return (await settleFromSession(session)) ?? order;
       }
       if (session.status === "open") {
-        throw new Error(`Could not close the checkout for ${order.reference}`);
+        throw new CheckoutNotClosed(
+          `Could not close the checkout for ${order.reference}`,
+        );
       }
     }
   }
@@ -194,12 +219,38 @@ export async function cancelCheckout(order: Order) {
   return (await getOrderByReference(order.reference)) ?? order;
 }
 
+// What became of this browser's checkout when it was asked to end.
+//   closed  there was none, or it is cancelled and its stock is back
+//   bought  it had been completed at Stripe: the order is paid, or still
+//           pending with the bank yet to release the money (the one case
+//           `cancelCheckout` leaves pending). It bought the bag it was made
+//           from, so the caller empties the bag.
+//   open    Stripe could not close it. It still holds its stock and is still
+//           remembered, so the next change tries again.
+export type EndedCheckout =
+  | { state: "closed" }
+  | { state: "bought"; order: Order }
+  | { state: "open"; order: Order };
+
 // The same, for whatever checkout this browser has open. Called before the
 // bag changes or a new checkout starts: a customer never competes with their
-// own hold, and an open Stripe page never outlives the bag it was made from.
-export async function cancelOwnCheckout() {
+// own hold, and an open Stripe page does not outlive the bag it was made from
+// unless Stripe cannot be reached.
+export async function cancelOwnCheckout(): Promise<EndedCheckout> {
   const order = await getOwnCheckout();
-  if (!order) return;
-  await cancelCheckout(order);
+  if (!order) return { state: "closed" };
+
+  let closed: Order;
+  try {
+    closed = await cancelCheckout(order);
+  } catch (error) {
+    if (!(error instanceof CheckoutNotClosed)) throw error;
+    console.error(`[checkout] ${error.message}`, error.cause);
+    return { state: "open", order };
+  }
+
   await forgetCheckout();
+  return closed.status === "paid" || closed.status === "pending"
+    ? { state: "bought", order: closed }
+    : { state: "closed" };
 }

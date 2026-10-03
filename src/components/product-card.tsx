@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { StockLabel } from "@/components/stock-label";
 import {
   formatPrice,
   getStockState,
@@ -18,7 +19,9 @@ export function ProductCard({
   eager?: boolean;
 }) {
   const stock = getStockState(product);
-  const badge = stock.available ? product.badge : stock.label;
+  const soldOut = stock.level === "out";
+  // A sold-out piece says so where its badge would be.
+  const badge = soldOut ? stock.label : product.badge;
   const [image] = product.images;
 
   return (
@@ -30,7 +33,7 @@ export function ProductCard({
           fill
           sizes={sizes}
           loading={eager ? "eager" : "lazy"}
-          className="mix-blend-multiply"
+          className={`mix-blend-multiply ${soldOut ? "opacity-50" : ""}`}
         />
         {badge ? (
           <span className="type-micro absolute top-3 left-3">{badge}</span>
@@ -40,9 +43,10 @@ export function ProductCard({
         <h3 className="underline-offset-4 group-hover:underline">
           {product.name}
         </h3>
-        <p className={stock.available ? "font-medium" : "text-muted"}>
+        <p className={soldOut ? "text-muted" : "font-medium"}>
           {formatPrice(product.priceCents)}
         </p>
+        {stock.level === "low" ? <StockLabel stock={stock} /> : null}
       </div>
     </Link>
   );
