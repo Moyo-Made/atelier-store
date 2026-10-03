@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useBag } from "@/components/bag";
+import { BagRoll } from "@/components/roll";
 import { authClient } from "@/lib/auth-client";
 
 const primaryLinks = [
@@ -39,9 +40,41 @@ function useScrolled() {
   );
 }
 
+// Below this, the header never tucks away.
+const TUCK_AFTER = 160;
+// Smaller movements, such as a trackpad settling, are ignored.
+const SCROLL_SLOP = 8;
+
+// True while the page is scrolling down, so the header can get out of the
+// way of the photographs. Any scroll up brings it back.
+function useTuckedAway() {
+  const [tucked, setTucked] = useState(false);
+
+  useEffect(() => {
+    let lastY = window.scrollY;
+    function onScroll() {
+      const y = window.scrollY;
+      if (Math.abs(y - lastY) < SCROLL_SLOP) return;
+      setTucked(y > lastY && y > TUCK_AFTER);
+      lastY = y;
+    }
+    return subscribeToScroll(onScroll);
+  }, []);
+
+  // Sticky columns below the header (`top-header-offset`) move up with it.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.toggleAttribute("data-header-tucked", tucked);
+    return () => root.removeAttribute("data-header-tucked");
+  }, [tucked]);
+
+  return tucked;
+}
+
 export function SiteHeader() {
   const pathname = usePathname();
   const scrolled = useScrolled();
+  const tucked = useTuckedAway();
   const bag = useBag();
   const menu = useRef<HTMLDialogElement>(null);
   // Better Auth cannot extend a session from a Server Component, so this
@@ -58,11 +91,12 @@ export function SiteHeader() {
   return (
     <>
       <header
-        className={`fixed inset-x-0 top-0 z-40 border-b transition-colors ${
+        // A keyboard user tabbing into a tucked header brings it back.
+        className={`fixed inset-x-0 top-0 z-40 border-b transition-[color,background-color,border-color,translate] duration-(--duration-slow) ease-emphasis focus-within:translate-y-0 ${
           overHero
             ? "border-transparent bg-transparent text-white"
             : "bg-background text-foreground"
-        }`}
+        } ${tucked ? "-translate-y-full" : ""}`}
       >
         <div className="shell grid h-header grid-cols-[1fr_auto_1fr] items-center">
           <button
@@ -97,7 +131,7 @@ export function SiteHeader() {
               {accountLabel}
             </Link>
             <Link href="/bag" className="link-reveal">
-              Bag ({bag.count})
+              Bag (<BagRoll value={bag.count} />)
             </Link>
           </nav>
         </div>
@@ -142,9 +176,13 @@ export function SiteHeader() {
             }}
             className="mt-6 flex flex-1 flex-col"
           >
-            <ul className="grid gap-4 text-lg font-medium">
-              {primaryLinks.map((link) => (
-                <li key={link.href}>
+            {/* The links follow the drawer in, one after another. */}
+            <ul className="menu-stagger grid gap-4 text-lg font-medium">
+              {primaryLinks.map((link, index) => (
+                <li
+                  key={link.href}
+                  style={{ "--item": index } as React.CSSProperties}
+                >
                   <Link
                     href={link.href}
                     prefetch={false}
@@ -156,9 +194,16 @@ export function SiteHeader() {
               ))}
             </ul>
 
-            <ul className="type-ui mt-10 grid gap-4 border-t pt-8">
-              {secondaryLinks.map((link) => (
-                <li key={link.href}>
+            <ul className="menu-stagger type-ui mt-10 grid gap-4 border-t pt-8">
+              {secondaryLinks.map((link, index) => (
+                <li
+                  key={link.href}
+                  style={
+                    {
+                      "--item": primaryLinks.length + index,
+                    } as React.CSSProperties
+                  }
+                >
                   <Link
                     href={link.href}
                     prefetch={false}

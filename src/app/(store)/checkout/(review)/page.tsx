@@ -106,7 +106,7 @@ export default async function CheckoutPage({
 
           <section
             aria-labelledby="pay-title"
-            className="col-span-full lg:sticky lg:top-header lg:col-span-4 lg:col-start-9 lg:self-start lg:pt-5"
+            className="col-span-full lg:sticky lg:top-header-offset lg:col-span-4 lg:col-start-9 lg:self-start lg:pt-5 lg:transition-[top] lg:duration-(--duration-slow) lg:ease-emphasis"
           >
             <h2 id="pay-title" className="type-ui">
               Payment

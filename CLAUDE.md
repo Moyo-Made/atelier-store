@@ -123,6 +123,16 @@ Stripe owns the payment page, card, email and US shipping address; the database 
 - `.field`'s error state is `aria-invalid="true"`, not a class.
 - `/styleguide` renders every token and primitive.
 
+### Motion
+
+- One curve, `--ease-emphasis`, and the `--duration-*` tokens; nothing bounces. Keyframes and motion classes live in `src/styles/motion.css`. No animation library: CSS plus React's `<ViewTransition>`.
+- Anything that starts hidden or delayed sits inside `prefers-reduced-motion: no-preference`, so with reduced motion nothing waits hidden. View transitions are switched off separately at the end of `motion.css`, because base.css does not reach their pseudo-elements.
+- The hero entrance plays once per page load: `HeroIntro` sets `data-intro-played` on `<html>` afterwards.
+- `Reveal` is for editorial photographs only, never product grids. It renders visible and hides only what starts below the fold.
+- Product card and product page share the name `product-image-<id>` so the photograph morphs between them. A name must be unique among rendered elements on a page, so do not show the same product twice on one page without dropping the name from one copy.
+- `Roll` slides changed text up into place. It stays still until `animate` is true, and `BagRoll` sets that from `useBag().changes`, so figures that arrive with the page or with hydration do not roll.
+- The header tucks away while scrolling down past 160px and returns on any scroll up or focus. While it is away it sets `data-header-tucked` on `<html>`, which sets `--header-offset` to 0. Sticky elements under the header use `top-header-offset`, not `top-header`, so they move up with it.
+
 ## Git
 
 This folder is its own repository (default branch `main`, remote `github.com/Moyo-Made/atelier-store`). It sits inside `~/Documents`, which is a separate, unrelated repository, so run git commands from this directory.

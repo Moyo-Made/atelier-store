@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ViewTransition } from "react";
 import { AddToBag } from "@/components/add-to-bag";
 import { ProductCard } from "@/components/product-card";
 import { StockLabel } from "@/components/stock-label";
@@ -57,7 +58,7 @@ function Disclosure({
   children: React.ReactNode;
 }) {
   return (
-    <details className="group border-b">
+    <details className="disclosure group border-b">
       <summary className="flex cursor-pointer list-none items-center justify-between py-5 font-medium [&::-webkit-details-marker]:hidden">
         {title}
         <svg
@@ -95,11 +96,8 @@ export default async function ProductPage({
           aria-label="Product images"
           className="flex snap-x snap-mandatory gap-px overflow-x-auto lg:grid lg:overflow-visible"
         >
-          {product.images.map((image, index) => (
-            <li
-              key={image.src}
-              className="w-[88%] shrink-0 snap-start md:w-[62%] lg:w-auto"
-            >
+          {product.images.map((image, index) => {
+            const photograph = (
               <div className="media-tile">
                 <Image
                   src={image.src}
@@ -110,75 +108,99 @@ export default async function ProductPage({
                   className="mix-blend-multiply"
                 />
               </div>
-            </li>
-          ))}
+            );
+
+            return (
+              <li
+                key={image.src}
+                className="w-[88%] shrink-0 snap-start md:w-[62%] lg:w-auto"
+              >
+                {/* Shares its name with the product card, so the
+                    photograph travels from the tile that was clicked. */}
+                {index === 0 ? (
+                  <ViewTransition
+                    name={`product-image-${product.id}`}
+                    share="morph"
+                    default="none"
+                  >
+                    {photograph}
+                  </ViewTransition>
+                ) : (
+                  photograph
+                )}
+              </li>
+            );
+          })}
         </ul>
 
-        <div className="px-gutter pt-8 pb-section lg:sticky lg:top-header lg:self-start lg:pt-14">
-          <div className="lg:max-w-md">
-            <nav aria-label="Breadcrumb" className="type-caption text-muted">
-              <Link href="/" className="link-muted">
-                Home
-              </Link>
-              <span aria-hidden="true"> / </span>
-              <Link
-                href={categoryHref(product.category)}
-                className="link-muted"
-              >
-                {product.category.name}
-              </Link>
-            </nav>
+        <div className="px-gutter pt-8 pb-section lg:sticky lg:top-header-offset lg:self-start lg:pt-14 lg:transition-[top] lg:duration-(--duration-slow) lg:ease-emphasis">
+          {/* Rises in beside the photograph when the page opens. */}
+          <ViewTransition enter="product-details" default="none">
+            <div className="lg:max-w-md">
+              <nav aria-label="Breadcrumb" className="type-caption text-muted">
+                <Link href="/" className="link-muted">
+                  Home
+                </Link>
+                <span aria-hidden="true"> / </span>
+                <Link
+                  href={categoryHref(product.category)}
+                  className="link-muted"
+                >
+                  {product.category.name}
+                </Link>
+              </nav>
 
-            <h1 className="type-title mt-4">{product.name}</h1>
-            <p className="mt-3 text-lg">{formatPrice(product.priceCents)}</p>
-            <StockLabel stock={stock} className="type-ui mt-2" />
+              <h1 className="type-title mt-4">{product.name}</h1>
+              <p className="mt-3 text-lg">{formatPrice(product.priceCents)}</p>
+              <StockLabel stock={stock} className="type-ui mt-2" />
 
-            <p className="type-body mt-8">{product.description}</p>
+              <p className="type-body mt-8">{product.description}</p>
 
-            <div className="mt-8">
-              <AddToBag
-                productId={product.id}
-                available={stock.available}
-                max={getMaxQuantity(product)}
-              />
-              {stock.level === "out" ? (
-                <p className="type-caption text-muted">
-                  This piece has sold out.{" "}
-                  <Link
-                    href={categoryHref(product.category)}
-                    className="link text-foreground"
-                  >
-                    See all {product.category.name.toLowerCase()}
-                  </Link>
-                </p>
-              ) : null}
+              <div className="mt-8">
+                <AddToBag
+                  productId={product.id}
+                  available={stock.available}
+                  max={getMaxQuantity(product)}
+                />
+                {stock.level === "out" ? (
+                  <p className="type-caption text-muted">
+                    This piece has sold out.{" "}
+                    <Link
+                      href={categoryHref(product.category)}
+                      className="link text-foreground"
+                    >
+                      See all {product.category.name.toLowerCase()}
+                    </Link>
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="mt-6 border-t">
+                <Disclosure title="Details">
+                  <ul className="grid gap-2">
+                    {product.details.map((detail) => (
+                      <li key={detail}>{detail}</li>
+                    ))}
+                  </ul>
+                  <p className="type-caption mt-4 text-muted">
+                    Style {product.styleNumber}
+                  </p>
+                </Disclosure>
+                <Disclosure title="Materials and care">
+                  <p>{product.materials}</p>
+                </Disclosure>
+                <Disclosure title="Delivery and returns">
+                  <p>
+                    Free tracked delivery on every order, and free returns within
+                    30 days.{" "}
+                    <Link href="/care/delivery" prefetch={false} className="link">
+                      Delivery and returns
+                    </Link>
+                  </p>
+                </Disclosure>
+              </div>
             </div>
-
-            <div className="mt-6 border-t">
-              <Disclosure title="Details">
-                <ul className="grid gap-2">
-                  {product.details.map((detail) => (
-                    <li key={detail}>{detail}</li>
-                  ))}
-                </ul>
-                <p className="type-caption mt-4 text-muted">
-                  Style {product.styleNumber}
-                </p>
-              </Disclosure>
-              <Disclosure title="Materials and care">
-                <p>{product.materials}</p>
-              </Disclosure>
-              <Disclosure title="Delivery and returns">
-                <p>
-                  Free tracked delivery on every order, and free returns within
-                  30 days.{" "}
-                  <Link href="/care/delivery" prefetch={false} className="link">
-                    Delivery and returns
-                  </Link>
-                </p>
-              </Disclosure>
-            </div>
-          </div>
+          </ViewTransition>
         </div>
       </div>
 

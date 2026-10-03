@@ -1,0 +1,210 @@
+/*
+ * Motion. Everything uses --ease-emphasis, so nothing bounces or overshoots.
+ * Anything that starts hidden or delayed only runs under
+ * `prefers-reduced-motion: no-preference`: with reduced motion nothing
+ * starts hidden, so the 1ms collapse in base.css never leaves an element
+ * waiting out a delay. View transitions are switched off separately at the
+ * end, since base.css does not reach their pseudo-elements.
+ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    translate: 0 0.5rem;
+  }
+}
+
+@keyframes rise {
+  from {
+    translate: 0 110%;
+  }
+}
+
+@keyframes settle {
+  from {
+    scale: 1.08;
+  }
+}
+
+@keyframes unveil {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@layer components {
+  /* ---------- Homepage hero ---------- */
+
+  /* Each word of the headline rises from behind its own mask. The padding
+     keeps descenders inside the mask without moving the line. */
+  .intro-word {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    padding-bottom: 0.1em;
+    margin-bottom: -0.1em;
+  }
+
+  .intro-word > span {
+    display: inline-block;
+  }
+
+  /* `HeroIntro` sets data-intro-played once the entrance has run, so a
+     return to the homepage in the same visit shows the hero at rest. */
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-intro-played]) {
+      .intro-image {
+        animation:
+          settle calc(var(--duration-reveal) * 2) var(--ease-emphasis) both,
+          fade-in var(--duration-reveal) ease both;
+      }
+
+      .intro-word > span {
+        animation: rise var(--duration-reveal) var(--ease-emphasis) both;
+        animation-delay: calc(0.5s + var(--word, 0) * 0.12s);
+      }
+
+      /* Set the start with `[--delay:…]`. */
+      .intro-fade {
+        animation: fade-up var(--duration-slow) var(--ease-emphasis) both;
+        animation-delay: var(--delay, 0s);
+      }
+    }
+  }
+
+  /* ---------- Editorial photographs ---------- */
+
+  /* `Reveal` adds these. A curtain lifts from the bottom while the
+     photograph settles, then any caption over it fades in. Only a
+     photograph that starts below the fold is ever pending. */
+  .reveal-pending {
+    clip-path: inset(100% 0 0 0);
+  }
+
+  .reveal-shown {
+    animation: unveil var(--duration-reveal) var(--ease-emphasis) both;
+
+    & img {
+      animation: settle calc(var(--duration-reveal) * 1.4) var(--ease-emphasis)
+        both;
+    }
+
+    & .reveal-caption > * {
+      animation: fade-up var(--duration-slow) var(--ease-emphasis) both;
+      animation-delay: calc(var(--duration-reveal) / 2);
+    }
+  }
+
+  /* ---------- Changing text ---------- */
+
+  /* `Roll`: new text slides up into place, as in the bag count. */
+  .roll {
+    display: inline-grid;
+    overflow: hidden;
+    vertical-align: bottom;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .roll-in {
+      animation: rise var(--duration-slow) var(--ease-emphasis) both;
+    }
+
+    /* A status line that fades in when what it says changes. */
+    .enter-fade {
+      animation: fade-up var(--duration-slow) var(--ease-emphasis) both;
+    }
+  }
+
+  /* ---------- Disclosures ---------- */
+
+  /* A <details> panel slides open instead of jumping. Browsers that cannot
+     animate to `auto` open it at once, as before. */
+  @supports (interpolate-size: allow-keywords) {
+    @media (prefers-reduced-motion: no-preference) {
+      .disclosure {
+        interpolate-size: allow-keywords;
+      }
+
+      .disclosure::details-content {
+        block-size: 0;
+        overflow: clip;
+        opacity: 0;
+        transition:
+          block-size var(--duration-slow) var(--ease-emphasis),
+          opacity var(--duration-base) ease,
+          content-visibility var(--duration-slow) allow-discrete;
+      }
+
+      .disclosure[open]::details-content {
+        block-size: auto;
+        opacity: 1;
+      }
+    }
+  }
+
+  /* ---------- Menu ---------- */
+
+  /* The menu's links follow the drawer in, one after another, starting as
+     the drawer is most of the way across. Number them with `--item`.
+     Closing has no stagger. */
+  @media (prefers-reduced-motion: no-preference) {
+    .menu-stagger > li {
+      transition:
+        opacity var(--duration-slow) ease,
+        translate var(--duration-slow) var(--ease-emphasis);
+      transition-delay: calc(280ms + var(--item, 0) * 45ms);
+
+      @starting-style {
+        opacity: 0;
+        translate: 0 0.625rem;
+      }
+    }
+  }
+}
+
+/* ---------- View transitions ---------- */
+
+/* Clicks during a transition reach the page instead of the overlay. */
+::view-transition {
+  pointer-events: none;
+}
+
+/* A product photograph travelling from its tile to the product page. */
+::view-transition-group(.morph) {
+  animation-duration: var(--duration-slow);
+  animation-timing-function: var(--ease-emphasis);
+}
+
+/* The product page's details rise in beside the photograph. */
+::view-transition-new(.product-details) {
+  animation: fade-up var(--duration-slow) var(--ease-emphasis) 150ms both;
+}
+
+/* A removed bag line fades out, then the lines below slide up. */
+::view-transition-old(.bag-line-exit) {
+  animation: fade-in var(--duration-base) ease reverse both;
+}
+
+::view-transition-group(.bag-line-move) {
+  animation-duration: var(--duration-slow);
+  animation-timing-function: var(--ease-emphasis);
+  animation-delay: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

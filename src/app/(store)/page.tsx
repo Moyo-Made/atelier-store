@@ -1,7 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Fragment } from "react";
+import { HeroIntro } from "@/components/hero-intro";
 import { NewsletterForm } from "@/components/newsletter-form";
 import { ProductCard } from "@/components/product-card";
+import { Reveal } from "@/components/reveal";
 import { atelier, collections, hero, services } from "@/data/catalog";
 import { getHomepageCategories, getNewArrivals } from "@/db/queries";
 import { categoryHref } from "@/lib/products";
@@ -27,18 +30,36 @@ export default async function Home() {
           fill
           preload
           sizes="100vw"
-          className="object-[42%_18%]"
+          className="intro-image object-[42%_18%]"
         />
         <div className="absolute inset-x-0 top-0 h-40 bg-linear-to-b from-black/45 to-transparent" />
         <div className="on-image absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent pt-32 pb-10 lg:pb-16">
           <div className="shell">
-            <h1 className="type-display max-w-[12ch]">{hero.title}</h1>
-            <p className="type-lead mt-4 max-w-[30ch]">{hero.description}</p>
-            <Link href={hero.href} className="btn btn-primary mt-8">
+            {/* Staggered by word, since where the lines break depends on the screen. */}
+            <h1 className="type-display max-w-[12ch]">
+              {hero.title.split(" ").map((word, index) => (
+                <Fragment key={index}>
+                  {index > 0 ? " " : null}
+                  <span className="intro-word">
+                    <span style={{ "--word": index } as React.CSSProperties}>
+                      {word}
+                    </span>
+                  </span>
+                </Fragment>
+              ))}
+            </h1>
+            <p className="type-lead intro-fade mt-4 max-w-[30ch] [--delay:1.15s]">
+              {hero.description}
+            </p>
+            <Link
+              href={hero.href}
+              className="btn btn-primary intro-fade mt-8 [--delay:1.35s]"
+            >
               {hero.cta}
             </Link>
           </div>
         </div>
+        <HeroIntro />
       </section>
 
       <section aria-labelledby="categories-title">
@@ -73,23 +94,25 @@ export default async function Home() {
         </h2>
         <ul className="grid gap-px md:grid-cols-2">
           {collections.map((collection) => (
-            <li
-              key={collection.href}
-              className="media-cover aspect-4/5 md:aspect-portrait lg:aspect-6/7"
-            >
-              <Image
-                src={collection.image}
-                alt={collection.alt}
-                fill
-                sizes="(min-width: 48rem) 50vw, 100vw"
-              />
-              <div className="on-image absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent px-gutter pt-32 pb-10 text-center lg:pb-14">
-                <h3 className="type-title">{collection.name}</h3>
-                <p className="type-caption mt-1">{collection.season}</p>
-                <Link href={collection.href} className="btn btn-secondary mt-6">
-                  {collection.cta}
-                </Link>
-              </div>
+            <li key={collection.href}>
+              <Reveal className="media-cover aspect-4/5 md:aspect-portrait lg:aspect-6/7">
+                <Image
+                  src={collection.image}
+                  alt={collection.alt}
+                  fill
+                  sizes="(min-width: 48rem) 50vw, 100vw"
+                />
+                <div className="on-image reveal-caption absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent px-gutter pt-32 pb-10 text-center lg:pb-14">
+                  <h3 className="type-title">{collection.name}</h3>
+                  <p className="type-caption mt-1">{collection.season}</p>
+                  <Link
+                    href={collection.href}
+                    className="btn btn-secondary mt-6"
+                  >
+                    {collection.cta}
+                  </Link>
+                </div>
+              </Reveal>
             </li>
           ))}
         </ul>
@@ -119,14 +142,14 @@ export default async function Home() {
 
       <section aria-labelledby="atelier-title" className="py-section">
         <div className="shell grid-page items-center gap-y-10">
-          <div className="media-cover col-span-full aspect-4/3 lg:col-span-7">
+          <Reveal className="media-cover col-span-full aspect-4/3 lg:col-span-7">
             <Image
               src={atelier.image}
               alt={atelier.alt}
               fill
               sizes="(min-width: 64rem) 58vw, 100vw"
             />
-          </div>
+          </Reveal>
           <div className="col-span-full lg:col-span-4 lg:col-start-9">
             <h2 id="atelier-title" className="type-headline">
               {atelier.title}

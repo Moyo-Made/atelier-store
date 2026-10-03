@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, use, useMemo, useSyncExternalStore } from "react";
+import {
+  createContext,
+  use,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   addToBag,
   removeFromBag,
@@ -12,6 +18,9 @@ import { BAG_COOKIE, parseBag } from "@/lib/bag-cookie";
 
 type Bag = {
   count: number;
+  // How many changes this page has made to the bag. The header only rolls
+  // its count once this is above 0.
+  changes: number;
   quantityOf: (productId: number) => number;
   add: (productId: number) => Promise<BagChange>;
   setQuantity: (productId: number, quantity: number) => Promise<BagChange>;
@@ -52,6 +61,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
   // Empty on the server: the layout is prerendered, so the count appears once
   // the page has hydrated.
   const cookie = useSyncExternalStore(subscribe, readCookie, () => "");
+  const [changes, setChanges] = useState(0);
 
   const bag = useMemo<Bag>(() => {
     const entries = parseBag(cookie);
@@ -59,12 +69,14 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
       try {
         return await action;
       } finally {
+        setChanges((count) => count + 1);
         notify();
       }
     };
 
     return {
       count: entries.reduce((total, entry) => total + entry.quantity, 0),
+      changes,
       quantityOf: (productId) =>
         entries.find((entry) => entry.productId === productId)?.quantity ?? 0,
       add: (productId) => after(addToBag(productId)),
@@ -74,7 +86,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
       tidy: () => after(tidyBag()),
       refresh: notify,
     };
-  }, [cookie]);
+  }, [cookie, changes]);
 
   return <BagContext value={bag}>{children}</BagContext>;
 }

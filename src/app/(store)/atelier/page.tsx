@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ContentPage, ContentSection } from "@/components/content-page";
+import { Reveal } from "@/components/reveal";
 import { atelier } from "@/data/catalog";
 
 const intro =
@@ -16,7 +17,7 @@ export default function AtelierPage() {
   return (
     <ContentPage title="The atelier" intro={intro}>
       <div className="shell pb-10 lg:pb-14">
-        <div className="media-cover aspect-4/3 lg:aspect-16/7">
+        <Reveal className="media-cover aspect-4/3 lg:aspect-16/7">
           <Image
             src={atelier.image}
             alt={atelier.alt}
@@ -24,7 +25,7 @@ export default function AtelierPage() {
             preload
             sizes="100vw"
           />
-        </div>
+        </Reveal>
       </div>
 
       <ContentSection title="One workshop">

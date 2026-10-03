@@ -32,6 +32,8 @@
   --duration-fast: 100ms;
   --duration-base: 300ms;
   --duration-slow: 800ms;
+  /* Photographs settling into place. */
+  --duration-reveal: 1300ms;
 
   @variant md {
     --gutter: 2rem;
@@ -47,6 +49,13 @@
     --section: 7.5rem;
     --header: 4.5rem;
   }
+
+  /* How much of the top the header covers: none while it is tucked away. */
+  --header-offset: var(--header);
+}
+
+:root[data-header-tucked] {
+  --header-offset: 0px;
 }
 
 @theme inline {
@@ -114,6 +123,8 @@
   --spacing-grid: var(--grid-gap);
   --spacing-section: var(--section);
   --spacing-header: var(--header);
+  /* For sticky elements, which follow the header when it tucks away. */
+  --spacing-header-offset: var(--header-offset);
   --spacing-control: var(--control);
 
   --container-page: 120rem;
